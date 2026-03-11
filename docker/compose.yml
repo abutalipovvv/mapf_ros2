@@ -1,0 +1,61 @@
+x-basic: &basic
+  ipc: host
+  stdin_open: true
+  network_mode: host
+  tty: true
+  privileged: true
+  environment:
+    DISPLAY: ${DISPLAY}
+    XAUTHORITY: /root/.Xauthority
+    QT_X11_NO_MITSHM: "1"
+    XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR}
+  volumes:
+    - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    - ${HOME}/.Xauthority:/root/.Xauthority:ro
+
+services:
+  go2_simulator:
+    <<: *basic
+    image: go2_simulator
+    container_name: go2_simulator
+    command: >
+      bash -c "
+      source /opt/ros/jazzy/setup.bash &&
+      source /root/ws/install/setup.bash &&
+      ros2 launch gazebo_sim launch.py use_sim_time:=true
+      "
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_DISTRO: jazzy
+        BASE_IMG: ros:jazzy
+
+    gpus: all
+
+    environment:
+      DISPLAY: ${DISPLAY}
+      XAUTHORITY: /root/.Xauthority
+      QT_X11_NO_MITSHM: "1"
+      XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR}
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      GAZEBO_RESOURCE_PATH: /usr/share/gazebo-11
+      GZ_SIM_RESOURCE_PATH: /root/ws/src/gazebo_sim/models/
+      GAZEBO_MODEL_PATH: /usr/share/gazebo-11/models/:/opt/ros/jazzy/share/turtlebot3_gazebo/models/
+      CYCLONEDDS_URI: file:///cyclonedds.xml
+      ROS_DOMAIN_ID: "0"
+
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
+
+      __NV_PRIME_RENDER_OFFLOAD: "1"
+      __GLX_VENDOR_LIBRARY_NAME: nvidia
+      __VK_LAYER_NV_optimus: NVIDIA_only
+
+    volumes:
+      - ./cyclonedds.xml:/cyclonedds.xml:ro
+      - ./../:/root/ws/src/
+      - /dev/dri:/dev/dri
+
+    devices:
+      - /dev/dri:/dev/dri
