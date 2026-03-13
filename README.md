@@ -1,199 +1,271 @@
-# Unitree go2, go1 simulation in Gazebo Sim
+# Hybrid Multi-Robot Fleet Manager for ROS2 + Gazebo + Nav2
 
-This repository allows you to run dog robots in the GAZEBO simulator. The robot can walk, rotate with 12 degrees of freedom, and features a `robot_msgs` interface. The robot moves using inverse kinematics, and its odometry is based on direct kinematics. Additionally, all functionalities are developed in Python.
+This repository contains a hybrid fleet coordination stack for multiple mobile robots in Gazebo:
 
+- centralized discrete planning with MAPF / CBS on a grid
+- decentralized continuous execution with Nav2 inside each robot namespace
+- a lightweight Fleet Manager that converts discrete plans into Nav2 waypoint chains
 
-## Run from docker 
+The project is intended as a research and thesis platform rather than a production fleet product.
 
-> **Note:** BUILDED AND TESTED WITH NVIDIA GPU.
+## Architecture
 
-### setup docker, docker compose and nvidia container toolkit
-[docker install](https://docs.docker.com/engine/install/ubuntu/)
+The execution pipeline is:
 
-[nvidia-container-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-### build docker :
+`task -> FleetManager -> CBS planner -> grid path -> world waypoints -> Nav2 -> robot`
 
-```bash
-mkdir -p ~/go_sim/src
-cd ~/go_sim/src/docker
-docker compose -f compose.yml build simulator
-xhost +local:docker
-docker compose -f compose.yml up simulator
+Main components:
+
+- `gazebo_sim`: multi-robot Gazebo + Nav2 bringup
+- `hybrid_fleet_manager`: centralized hybrid fleet logic and visualizer
+- `task_manager`: CLI task publisher for testing
+
+Important principle:
+
+- CBS operates only on grid coordinates
+- Nav2 operates only on world coordinates
+- the Fleet Manager is the bridge between them
+
+## Repository Layout
+
+```text
+gazebo_sim/
+  config/
+  launch/
+  maps/
+  world/
+
+hybrid_fleet_manager/
+  config/
+  launch/
+  scripts/
+    planning/
+    runtime/
+    utils/
+  src/
+  test/
+  tools/
+
+task_manager/
 ```
 
+## Requirements
 
-## Run from source
+Tested in the current project workflow with:
 
-> **Note:** BUILDED AND TESTED FROM ROS2 JAZZY, UBUNTU 22.04.
+- Ubuntu 22.04
+- ROS2 Jazzy
+- Gazebo Sim
+- Nav2
 
-> **Note:** Before launching, ensure that you install all dependencies and build the project using `colcon build`.
+You also need standard ROS2 development tools:
 
----
+- `colcon`
+- `rosdep`
+- `pytest`
 
-## Setup and Installation
+## Build
 
-### Clone the Repository and Build
-
-```bash
-mkdir -p ~/go_sim/src
-cd ~/go_sim/src
-git clone https://github.com/abutalipovvv/go_sim_py.git .
-cd ..
-colcon build --symlink-install
-```
-
-### Install Dependencies
+Clone the repository and build:
 
 ```bash
-cd ~/go_sim
+mkdir -p ~/ws/src
+cd ~/ws/src
+git clone git@github.com:abutalipovvv/mapf_ros2.git .
+cd ~/ws
 rosdep update
 rosdep install --from-paths src --ignore-src -r -y
-```
-
-## Environment Configuration
-
-### Export Gazebo Models Path
-
-Before running the simulation, export the path to your Gazebo models:
-
-```bash
-export GZ_SIM_RESOURCE_PATH=~/go_sim/src/gazebo_sim/models
-```
-(Replace with the correct path to your models.)
-
-### Configure CycloneDDS
-
-To support multiple topics, configure CycloneDDS by creating a configuration file (e.g., cyclonedds.xml) with the following content:
-
-```bash
-<CycloneDDS>
-  <Domain>
-    <General>
-      <Interfaces>
-        <NetworkInterface name="lo" multicast="true" />
-      </Interfaces>
-      <DontRoute>true</DontRoute>
-    </General>
-    <Discovery>
-      <ParticipantIndex>auto</ParticipantIndex>
-      <MaxAutoParticipantIndex>100</MaxAutoParticipantIndex>
-    </Discovery>
-  </Domain>
-</CycloneDDS>
-```
-Then, set the environment variable to point to this file:
-
-```bash
-export CYCLONEDDS_URI=file://path_to_cyclonedds.xml
-```
-
-(Replace `path_to_cyclonedds.xml` with the actual file path.)
-
-## Running the Simulation
-
-```bash
-#Navigate to the project directory:
-
-cd ~/go_sim
-
-#Source the environment setup:
-
+colcon build --symlink-install
 source install/local_setup.bash
-
-#Launch the simulation:
-
-ros2 launch gazebo_sim launch.py
 ```
 
-## Controlling the Robot
+## Multi-Robot Simulation
 
-### Moving the Robot
+Robot spawn positions are configured in [robots.yaml](/home/kaisar/go2_ros2_sim_py/gazebo_sim/config/robots.yaml).
 
-The robot moves by publishing velocity commands to the `<robot_namespace>/cmd_vel` topic. By default, the robot is named robot1.
+Example:
 
-Example using `teleop_twist_keyboard`:
+```yaml
+robots:
+  - name: robot1
+    x_pose: '0.0'
+    y_pose: '0.0'
+  - name: robot2
+    x_pose: '-2.0'
+    y_pose: '0.0'
+```
+
+Launch Gazebo + multiple robots + Nav2:
 
 ```bash
-source install/local_setup.bash
-ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r /cmd_vel:=/robot1/cmd_vel
+source ~/ws/install/local_setup.bash
+ros2 launch gazebo_sim gazebo_multi_nav2_world.launch.py
 ```
 
+## Nav2 Namespace Substitution
 
-![](./media/robot_move.gif)
+`gazebo_sim/config/nav2_params.yaml` is a single shared Nav2 template.
 
-Robot Modes
+It uses the placeholder:
 
-The robot supports several modes:
+```yaml
+<robot_namespace>
+```
 
-    REST – Default position in which the robot cannot move.
-    STAND – Mode in which the robot can rotate in place.
-    TROT – Walking mode.
+Example:
 
-The robot operates with 12 degrees of freedom. To enable rotation, switch the mode to "STAND" by publishing to the robot_mode topic.
+```yaml
+scan_topic: <robot_namespace>/scan
+odom_topic: <robot_namespace>/odometry/filtered
+```
 
-Example (for a robot with namespace `robot1`):
+During `gazebo_multi_nav2_world.launch.py`, a temporary per-robot Nav2 params file is generated automatically, for example:
+
+- `/tmp/tb3_multi_nav2/robot1_nav2_params.yaml`
+- `/tmp/tb3_multi_nav2/robot2_nav2_params.yaml`
+
+So you keep one readable config file, but each robot still receives absolute namespaced topics such as:
+
+- `/robot1/scan`
+- `/robot2/scan`
+
+## Fleet Manager
+
+Fleet Manager parameters live in [fleet_manager_params.yaml](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/config/fleet_manager_params.yaml).
+
+Current core functionality:
+
+- receives tasks from `/fleet/tasks`
+- reads robot poses from AMCL
+- converts world poses to grid cells
+- runs centralized CBS planning
+- converts discrete plans into waypoint chains
+- sends goals through each robot's Nav2 `navigate_to_pose`
+- blocks tasks if the goal is occupied by another robot
+- treats idle / finished robots as static blocked cells for planning
+- replans on timeout / off-path / aborted execution
+
+Start the Fleet Manager:
 
 ```bash
-ros2 topic pub /robot1/robot_mode quadropted_msgs/msg/RobotModeCommand "{mode: 'STAND', robot_id: 1}"
+source ~/ws/install/local_setup.bash
+ros2 run hybrid_fleet_manager fleet_manager --ros-args --params-file ~/ws/src/hybrid_fleet_manager/config/fleet_manager_params.yaml
 ```
 
-After switching modes, control the robot using velocity commands:
+If you prefer the launch file:
 
 ```bash
-ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r /cmd_vel:=/robot1/cmd_vel
+source ~/ws/install/local_setup.bash
+ros2 launch hybrid_fleet_manager fleet_manager.launch.py
 ```
 
+## Task Manager
 
-![](./media/move1.gif)
+Landmarks are stored in [landmarks.yaml](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/config/landmarks.yaml).
 
-### Changing Robot Behavior
+Current demo landmarks:
 
-The robot can sit and stand using the `robot_behavior_command` service.
+- `LM1` ... `LM9`
 
-Example command:
+Example single task:
 
 ```bash
-ros2 service call /robot1/robot_behavior_command quadropted_msgs/srv/RobotBehaviorCommand "{command: 'walk'}"
+ros2 run task_manager task_manager --robot robot1 --goal LM9
 ```
 
-Possible commands:
+Example sequential task list:
 
-    walk – The robot stands up (REST) and can walk (TROT).
-    up – The robot stands up (REST) and locks movement.
-    sit – The robot sits down (STAND).
+```bash
+ros2 run task_manager task_manager --robot robot1 --goal LM5 --goal LM8 --goal LM9
+```
 
-![](./media/sitUp.gif)
+Example waiting for terminal status between goals:
 
-## Multi-Robot Setup and Model Switching
+```bash
+ros2 run task_manager task_manager --robot robot1 --goal LM3 --goal LM1 --wait-status
+```
 
-### Changing Robot Models
+Cancel active task:
 
-You can change between robot models (e.g., go2, go1) in gazebo_multi_nav2_world.launch.py file 102 str:
+```bash
+ros2 run task_manager task_manager --robot robot1 --cancel
+```
 
-![](./media/switch.png)
+Monitor task status:
 
-for go2: use "go2_description" 
-for go1: use "go1_description"
+```bash
+ros2 topic echo /fleet/task_status
+```
 
-Running Multiple Robots Simultaneously
-![](./media/go1multi.png)
-![](./media/go2multi.png)
-### The repository supports simultaneous operation of multiple robots. Each robot has access to nav2. In the robot.config file, add the robot’s namespace and spawn coordinates in the world.
-![](./media/robot_config.png)
+## Visualizer
 
-### NAV2 work demonstration: 
-![](./media/robot-nav2.gif)
+The simple monitor visualizes:
 
+- landmarks
+- robots
+- the landmark graph
+- the active global plan on that graph
 
-## Credits, thaks for all
+Run it with:
 
-    mike4192: (SpotMicro)[https://github.com/mike4192/spotMicro]
-    Unitree Robotics: (A1 ROS)[https://github.com/unitreerobotics/a1_ros]
-    QUADRUPED ROBOTICS: (Quadruped)[https://quadruped.de]
-    lnotspotl: (GitHub)[https://github.com/lnotspotl]
-    anujjain-dev: (Unitree-go2 ROS2)[https://github.com/anujjain-dev/unitree-go2-ros2]
+```bash
+source ~/ws/install/local_setup.bash
+ros2 run hybrid_fleet_manager grid_monitor
+```
 
-## TODO
+It also saves a PNG snapshot to:
 
-    Add Gazebo Classic support (physics and inertial parameters for URDF).
-    Perform odometry calibration 
+```text
+/root/ws/src/output/fleet_live_monitor.png
+```
+
+## CBS Planner
+
+CBS implementation lives in:
+
+- [cbs_planner.py](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/scripts/planning/cbs_planner.py)
+
+It currently supports:
+
+- vertex conflicts
+- edge conflicts
+- per-agent constraints
+- constrained low-level A*
+- high-level CBS search limits
+- static blocked cells for non-moving robots
+
+## Tests
+
+Run the current planner and FleetManager logic tests:
+
+```bash
+pytest -q \
+  hybrid_fleet_manager/test/test_cbs_planner.py \
+  hybrid_fleet_manager/test/test_cbs_scenarios.py \
+  hybrid_fleet_manager/test/test_fleet_manager_logic.py
+```
+
+Run the CBS scenario demo:
+
+```bash
+PYTHONPATH=. python3 hybrid_fleet_manager/tools/run_cbs_scenarios.py
+```
+
+## Important Config Files
+
+- [robots.yaml](/home/kaisar/go2_ros2_sim_py/gazebo_sim/config/robots.yaml): available robots and spawn poses
+- [nav2_params.yaml](/home/kaisar/go2_ros2_sim_py/gazebo_sim/config/nav2_params.yaml): shared Nav2 template with `<robot_namespace>` placeholders
+- [landmarks.yaml](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/config/landmarks.yaml): named task goals
+- [fleet_manager_params.yaml](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/config/fleet_manager_params.yaml): fleet planning and runtime parameters
+
+## Current Status
+
+The current system is already suitable as a thesis research platform for:
+
+- conflict-free centralized planning on a discrete grid
+- hybrid execution with Nav2
+- multi-robot Gazebo experiments
+- blocked goal handling
+- conflict scenario testing and visualization
+
+The next work should focus mainly on experiments, evaluation and comparison, not on adding product-style management features.

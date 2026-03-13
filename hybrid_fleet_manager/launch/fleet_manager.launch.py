@@ -28,7 +28,7 @@ def generate_launch_description() -> LaunchDescription:
     )
 
     grid_monitor_node = Node(
-        package="hybride_fleet_manager",
+        package="hybrid_fleet_manager",
         executable="grid_monitor",
         name="grid_monitor_node",
         output="screen",
