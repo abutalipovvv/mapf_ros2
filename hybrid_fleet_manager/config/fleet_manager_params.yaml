@@ -1,0 +1,27 @@
+fleet_manager_node:
+  ros__parameters:
+    robot_names: ["robot1", "robot2"]
+    map_topic: "/robot1/map"
+
+    # Occupancy handling for grid planning.
+    map_occ_threshold: 50
+    map_unknown_is_free: true
+
+    # Time-aware reservation settings.
+    reservation_time_step_sec: 1.0
+    nominal_robot_speed_mps: 0.30
+    reservation_hold_sec: 12.0
+
+    # Runtime robustness settings.
+    waypoint_timeout_sec: 45.0
+    offpath_max_cell_distance: 2
+    offpath_grace_ticks: 5
+    max_requeue_attempts: 5
+    cancel_timeout_sec: 2.0
+    pending_blocked_timeout_sec: 10.0
+    goal_occupied_radius_m: 0.35
+
+    # CBS search limits.
+    cbs_low_level_max_time: 256
+    cbs_max_high_level_nodes: 2000
+    cbs_max_planning_time_sec: 5.0

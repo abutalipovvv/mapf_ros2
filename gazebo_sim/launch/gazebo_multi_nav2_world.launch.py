@@ -100,6 +100,23 @@ def create_namespaced_bridge_yaml(base_yaml_path: str, namespace: str) -> str:
     return str(output_path)
 
 
+def create_namespaced_nav2_params_yaml(base_yaml_path: str, namespace: str) -> str:
+    with open(base_yaml_path, 'r', encoding='utf-8') as f:
+        params_text = f.read()
+
+    ns = _ns(namespace)
+    params_text = params_text.replace('<robot_namespace>', ns)
+
+    tmp_dir = Path(tempfile.gettempdir()) / 'tb3_multi_nav2'
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    output_path = tmp_dir / f'{namespace.strip("/")}_nav2_params.yaml'
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(params_text)
+
+    return str(output_path)
+
+
 def generate_launch_description():
     ld = LaunchDescription()
 
@@ -129,7 +146,7 @@ def generate_launch_description():
         description='Enable rviz launch'
     ))
 
-    tb3_model = os.environ.get('TURTLEBOT3_MODEL', 'waffle')
+    tb3_model = os.environ.get('TURTLEBOT3_MODEL', 'burger')
     model_folder = f'turtlebot3_{tb3_model}'
 
     urdf_file_name = f'turtlebot3_{tb3_model}.urdf'
@@ -163,6 +180,8 @@ def generate_launch_description():
         remappings = [
             ("/tf", "tf"),
             ("/tf_static", "tf_static"),
+            ("/odom", "odom"),
+            ("/scan", "scan"),
         ]
 
         patched_sdf = load_sdf_with_namespace(sdf_path, namespace)
@@ -219,6 +238,7 @@ def generate_launch_description():
         nav2_launch_file = os.path.join(pkg_path, 'launch', 'nav2', 'bringup_launch.py')
         map_yaml_file = os.path.join(pkg_path, 'maps', 'cafe_world_map.yaml')
         params_file = os.path.join(pkg_path, 'config', 'nav2_params.yaml')
+        namespaced_nav2_params = create_namespaced_nav2_params_yaml(params_file, namespace)
 
         message = (
             f"{{header: {{frame_id: map}}, pose: {{pose: {{position: "
@@ -242,7 +262,7 @@ def generate_launch_description():
                 'map': map_yaml_file,
                 'use_namespace': 'True',
                 'namespace': namespace,
-                'params_file': params_file,
+                'params_file': namespaced_nav2_params,
                 'autostart': 'true',
                 'use_sim_time': 'true',
                 'log_level': 'warn',

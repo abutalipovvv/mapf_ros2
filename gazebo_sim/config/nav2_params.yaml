@@ -37,7 +37,7 @@ amcl:
     z_max: 0.05
     z_rand: 0.5
     z_short: 0.05
-    scan_topic: scan
+    scan_topic: <robot_namespace>/scan
 
 map_server:
   ros__parameters:
@@ -60,7 +60,7 @@ bt_navigator:
     enable_stamped_cmd_vel: false
     global_frame: map
     robot_base_frame: base_link
-    odom_topic: odometry/filtered
+    odom_topic: <robot_namespace>/odom
     bt_loop_duration: 10
     default_server_timeout: 20
     wait_for_service_timeout: 1000
@@ -96,25 +96,25 @@ controller_server:
       stateful: true
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.2
+      yaw_goal_tolerance: 3.14
     # DWB controller parameters
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
       min_vel_x: 0.0
       min_vel_y: 0.0
-      max_vel_x: 0.18
+      max_vel_x: 0.60
       max_vel_y: 0.0
-      max_vel_theta: 0.5
+      max_vel_theta: 1.50
       min_speed_xy: 0.0
-      max_speed_xy: 0.18
+      max_speed_xy: 0.60
       min_speed_theta: 0.0
-      acc_lim_x: 2.5
+      acc_lim_x: 4.0
       acc_lim_y: 0.0
-      acc_lim_theta: 3.2
-      decel_lim_x: -2.5
+      acc_lim_theta: 6.0
+      decel_lim_x: -4.0
       decel_lim_y: 0.0
-      decel_lim_theta: -3.2
+      decel_lim_theta: -6.0
       vx_samples: 20
       vy_samples: 5
       vtheta_samples: 20
@@ -272,7 +272,7 @@ local_costmap:
         mark_threshold: 0
         observation_sources: scan
         scan:
-          topic: /robot1/scan
+          topic: <robot_namespace>/scan
           max_obstacle_height: 2.0
           clearing: true
           marking: true
@@ -305,7 +305,7 @@ global_costmap:
         enabled: true
         observation_sources: scan
         scan:
-          topic: /robot1/scan
+          topic: <robot_namespace>/scan
           max_obstacle_height: 2.0
           clearing: true
           marking: true
@@ -369,10 +369,10 @@ behavior_server:
   ros__parameters:
     use_sim_time: true
     enable_stamped_cmd_vel: false
-    local_costmap_topic: local_costmap/costmap_raw
-    global_costmap_topic: global_costmap/costmap_raw
-    local_footprint_topic: local_costmap/published_footprint
-    global_footprint_topic: global_costmap/published_footprint
+    local_costmap_topic: <robot_namespace>/local_costmap/costmap_raw
+    global_costmap_topic: <robot_namespace>/global_costmap/costmap_raw
+    local_footprint_topic: <robot_namespace>/local_costmap/published_footprint
+    global_footprint_topic: <robot_namespace>/global_costmap/published_footprint
     cycle_frequency: 10.0
     behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
     spin:
@@ -418,11 +418,11 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.26, 0.0, 1.0]
-    min_velocity: [-0.26, 0.0, -1.0]
-    max_accel: [2.5, 0.0, 3.2]
-    max_decel: [-2.5, 0.0, -3.2]
-    odom_topic: "odometry/filtered"
+    max_velocity: [0.60, 0.0, 1.5]
+    min_velocity: [-0.60, 0.0, -1.5]
+    max_accel: [4.0, 0.0, 6.0]
+    max_decel: [-4.0, 0.0, -6.0]
+    odom_topic: "<robot_namespace>/odom"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
@@ -433,9 +433,9 @@ collision_monitor:
     enable_stamped_cmd_vel: false
     base_frame_id: "base_link"
     odom_frame_id: "odom"
-    cmd_vel_in_topic: "cmd_vel_smoothed"
-    cmd_vel_out_topic: "cmd_vel"
-    state_topic: "collision_monitor_state"
+    cmd_vel_in_topic: "<robot_namespace>/cmd_vel_smoothed"
+    cmd_vel_out_topic: "<robot_namespace>/cmd_vel"
+    state_topic: "<robot_namespace>/collision_monitor_state"
     transform_tolerance: 0.2
     source_timeout: 1.0
     base_shift_correction: True
@@ -446,7 +446,7 @@ collision_monitor:
     FootprintApproach:
       type: "polygon"
       action_type: "approach"
-      footprint_topic: "/local_costmap/published_footprint"
+      footprint_topic: "<robot_namespace>/local_costmap/published_footprint"
       time_before_collision: 1.2
       simulation_time_step: 0.1
       min_points: 6
@@ -455,7 +455,7 @@ collision_monitor:
     observation_sources: ["scan"]
     scan:
       type: "scan"
-      topic: "scan"
+      topic: "<robot_namespace>/scan"
       min_height: 0.15
       max_height: 2.0
       enabled: True

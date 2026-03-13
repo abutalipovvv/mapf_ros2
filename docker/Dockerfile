@@ -69,6 +69,7 @@ RUN --mount=type=cache,target=/root/.ccache \
 RUN sed -i '/exec "\$@"/i umask 002' /ros_entrypoint.sh
 ENV WORKSPACE_DIR=/root/ws
 RUN sed -i '/exec "\$@"/i source "/opt/ros/jazzy/setup.bash"' /ros_entrypoint.sh
-
+RUN echo "source /root/ws/install/setup.bash" >> /root/.bashrc
+RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
 RUN sed -i '/exec "\$@"/i source "$WORKSPACE_DIR/install/setup.bash"' /ros_entrypoint.sh
 

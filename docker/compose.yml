@@ -14,10 +14,10 @@ x-basic: &basic
     - ${HOME}/.Xauthority:/root/.Xauthority:ro
 
 services:
-  go2_simulator:
+  sim:
     <<: *basic
-    image: go2_simulator
-    container_name: go2_simulator
+    image: sim
+    container_name: sim
     command: >
       bash -c "
       source /opt/ros/jazzy/setup.bash &&
