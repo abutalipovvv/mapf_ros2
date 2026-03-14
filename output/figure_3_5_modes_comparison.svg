@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#264653"/>
+    </marker>
+    <style>
+      .title { font: 700 34px 'DejaVu Sans', sans-serif; fill: #1f2933; }
+      .subtitle { font: 700 26px 'DejaVu Sans', sans-serif; fill: #243b53; }
+      .boxlabel { font: 600 20px 'DejaVu Sans', sans-serif; fill: #243b53; }
+      .body { font: 500 18px 'DejaVu Sans', sans-serif; fill: #486581; }
+      .small { font: 500 17px 'DejaVu Sans', sans-serif; fill: #5c677d; }
+      .col1 { fill: #eef6ff; stroke: #457b9d; stroke-width: 3; rx: 22; ry: 22; }
+      .col2 { fill: #f6fbf4; stroke: #588157; stroke-width: 3; rx: 22; ry: 22; }
+      .col3 { fill: #fff7ef; stroke: #bc6c25; stroke-width: 3; rx: 22; ry: 22; }
+      .node { fill: #ffffff; stroke: #94a3b8; stroke-width: 2.5; rx: 18; ry: 18; }
+      .arrow { stroke: #264653; stroke-width: 4; fill: none; marker-end: url(#arrow); }
+      .feedback { stroke: #7f5539; stroke-width: 3.5; fill: none; stroke-dasharray: 10 8; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="900" fill="#fcfcf9"/>
+  <text x="800" y="70" text-anchor="middle" class="title">Figure 3.5 - Compared Modes R1, R2, and R3</text>
+
+  <rect x="70" y="130" width="440" height="650" class="col1"/>
+  <rect x="580" y="130" width="440" height="650" class="col2"/>
+  <rect x="1090" y="130" width="440" height="650" class="col3"/>
+
+  <text x="290" y="185" text-anchor="middle" class="subtitle">R1</text>
+  <text x="800" y="185" text-anchor="middle" class="subtitle">R2</text>
+  <text x="1310" y="185" text-anchor="middle" class="subtitle">R3</text>
+
+  <text x="290" y="220" text-anchor="middle" class="body">Centralized discrete coordination</text>
+  <text x="800" y="220" text-anchor="middle" class="body">Decentralized execution</text>
+  <text x="1310" y="220" text-anchor="middle" class="body">Hybrid control</text>
+
+  <rect x="130" y="270" width="320" height="90" class="node"/>
+  <text x="290" y="325" text-anchor="middle" class="boxlabel">MAPF / CBS</text>
+
+  <rect x="130" y="430" width="320" height="100" class="node"/>
+  <text x="290" y="475" text-anchor="middle" class="boxlabel">Discrete conflict-free plan</text>
+  <text x="290" y="505" text-anchor="middle" class="small">schedule, path, conflict resolution</text>
+
+  <path d="M 290 360 L 290 430" class="arrow"/>
+
+  <rect x="640" y="270" width="320" height="90" class="node"/>
+  <text x="800" y="325" text-anchor="middle" class="boxlabel">Goal</text>
+
+  <rect x="640" y="430" width="320" height="90" class="node"/>
+  <text x="800" y="485" text-anchor="middle" class="boxlabel">Nav2</text>
+
+  <rect x="640" y="590" width="320" height="90" class="node"/>
+  <text x="800" y="645" text-anchor="middle" class="boxlabel">Robot</text>
+
+  <path d="M 800 360 L 800 430" class="arrow"/>
+  <path d="M 800 520 L 800 590" class="arrow"/>
+
+  <rect x="1150" y="250" width="320" height="80" class="node"/>
+  <text x="1310" y="300" text-anchor="middle" class="boxlabel">MAPF / CBS</text>
+
+  <rect x="1150" y="380" width="320" height="80" class="node"/>
+  <text x="1310" y="430" text-anchor="middle" class="boxlabel">Fleet Manager</text>
+
+  <rect x="1150" y="510" width="320" height="80" class="node"/>
+  <text x="1310" y="560" text-anchor="middle" class="boxlabel">Nav2</text>
+
+  <rect x="1150" y="640" width="320" height="80" class="node"/>
+  <text x="1310" y="690" text-anchor="middle" class="boxlabel">Robot</text>
+
+  <path d="M 1310 330 L 1310 380" class="arrow"/>
+  <path d="M 1310 460 L 1310 510" class="arrow"/>
+  <path d="M 1310 590 L 1310 640" class="arrow"/>
+
+  <path d="M 1150 680 C 1050 680, 1050 320, 1150 320" class="feedback"/>
+  <text x="1040" y="505" text-anchor="middle" class="small" transform="rotate(-90 1040 505)">Feedback / replanning</text>
+
+  <text x="290" y="740" text-anchor="middle" class="small">
+    R1 is used as a coordination reference in the discrete model.
+  </text>
+  <text x="800" y="740" text-anchor="middle" class="small">
+    R2 relies only on local navigation without global coordination.
+  </text>
+  <text x="1310" y="740" text-anchor="middle" class="small">
+    R3 combines global conflict resolution with practical execution.
+  </text>
+
+  <text x="800" y="835" text-anchor="middle" class="body">
+    Methodological meaning: R1 demonstrates conflict-free planning, R2 demonstrates local-only execution,
+  </text>
+  <text x="800" y="865" text-anchor="middle" class="body">
+    and R3 demonstrates the proposed hybrid architecture that links discrete coordination with continuous execution.
+  </text>
+</svg>

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="900" viewBox="0 0 1500 900">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#264653"/>
+    </marker>
+    <style>
+      .title { font: 700 34px 'DejaVu Sans', sans-serif; fill: #1f2933; }
+      .subtitle { font: 600 24px 'DejaVu Sans', sans-serif; fill: #355070; }
+      .label { font: 600 20px 'DejaVu Sans', sans-serif; fill: #243b53; }
+      .body { font: 500 18px 'DejaVu Sans', sans-serif; fill: #486581; }
+      .formula { font: 600 28px 'DejaVu Sans', sans-serif; fill: #1d3557; }
+      .small { font: 500 17px 'DejaVu Sans', sans-serif; fill: #5c677d; }
+      .panel-left { fill: #f3f8ff; stroke: #457b9d; stroke-width: 3; rx: 22; ry: 22; }
+      .panel-right { fill: #f4fbf3; stroke: #588157; stroke-width: 3; rx: 22; ry: 22; }
+      .axis { stroke: #6c757d; stroke-width: 3; }
+      .grid { stroke: #94a3b8; stroke-width: 2; }
+      .cell { fill: #ffffff; stroke: #94a3b8; stroke-width: 2; }
+      .cell-hi { fill: #fff3bf; stroke: #bc6c25; stroke-width: 3; }
+      .world { fill: #ffffff; stroke: #94a3b8; stroke-width: 2.5; }
+      .point { fill: #d62828; }
+      .arrow { stroke: #264653; stroke-width: 4; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #8d99ae; stroke-width: 3; stroke-dasharray: 10 8; fill: none; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1500" height="900" fill="#fcfcf9"/>
+  <text x="750" y="65" text-anchor="middle" class="title">Figure 3.4 - Coordinate Transformation: grid to world</text>
+
+  <rect x="80" y="120" width="560" height="470" class="panel-left"/>
+  <text x="360" y="165" text-anchor="middle" class="subtitle">Discrete grid fragment</text>
+
+  <line x1="160" y1="520" x2="560" y2="520" class="axis"/>
+  <line x1="160" y1="520" x2="160" y2="220" class="axis"/>
+  <text x="575" y="528" class="body">i</text>
+  <text x="150" y="205" class="body">j</text>
+
+  <rect x="200" y="440" width="80" height="80" class="cell"/>
+  <rect x="280" y="440" width="80" height="80" class="cell"/>
+  <rect x="360" y="440" width="80" height="80" class="cell"/>
+  <rect x="200" y="360" width="80" height="80" class="cell"/>
+  <rect x="280" y="360" width="80" height="80" class="cell-hi"/>
+  <rect x="360" y="360" width="80" height="80" class="cell"/>
+  <rect x="200" y="280" width="80" height="80" class="cell"/>
+  <rect x="280" y="280" width="80" height="80" class="cell"/>
+  <rect x="360" y="280" width="80" height="80" class="cell"/>
+
+  <text x="240" y="490" text-anchor="middle" class="small">(i, j)</text>
+  <text x="320" y="410" text-anchor="middle" class="label">(i, j)</text>
+  <text x="400" y="330" text-anchor="middle" class="small">(i+1, j+1)</text>
+
+  <circle cx="320" cy="400" r="6" class="point"/>
+  <text x="320" y="555" text-anchor="middle" class="body">Cell center used for mapping to continuous coordinates</text>
+
+  <text x="145" y="555" class="small">origin</text>
+
+  <rect x="860" y="120" width="560" height="470" class="panel-right"/>
+  <text x="1140" y="165" text-anchor="middle" class="subtitle">Continuous world / Gazebo coordinates</text>
+
+  <rect x="930" y="235" width="420" height="280" class="world"/>
+  <line x1="980" y1="480" x2="1280" y2="480" class="axis"/>
+  <line x1="980" y1="480" x2="980" y2="280" class="axis"/>
+  <text x="1292" y="488" class="body">x</text>
+  <text x="970" y="268" class="body">y</text>
+
+  <circle cx="1110" cy="380" r="8" class="point"/>
+  <text x="1125" y="370" class="label">(x, y)</text>
+  <line x1="1110" y1="380" x2="1110" y2="480" class="dash"/>
+  <line x1="980" y1="380" x2="1110" y2="380" class="dash"/>
+
+  <text x="1060" y="505" text-anchor="middle" class="small">x = x₀ + i · r</text>
+  <text x="950" y="430" text-anchor="end" class="small">y = y₀ + j · r</text>
+  <text x="1140" y="545" text-anchor="middle" class="body">Point in Gazebo / world frame</text>
+
+  <path d="M 640 355 C 760 355, 790 355, 900 355" class="arrow"/>
+  <text x="770" y="330" text-anchor="middle" class="label">grid to world transformation</text>
+
+  <text x="750" y="660" text-anchor="middle" class="formula">x = x₀ + i · r</text>
+  <text x="750" y="715" text-anchor="middle" class="formula">y = y₀ + j · r</text>
+
+  <text x="750" y="790" text-anchor="middle" class="body">where r is the grid resolution, and (x₀, y₀) is the world origin of the map</text>
+  <text x="750" y="830" text-anchor="middle" class="small">Suggested dissertation note: the discrete cell index is converted to the continuous Gazebo frame before sending waypoints to Nav2.</text>
+</svg>

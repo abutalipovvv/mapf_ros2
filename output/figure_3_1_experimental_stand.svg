@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#264653"/>
+    </marker>
+    <style>
+      .title { font: 700 36px 'DejaVu Sans', sans-serif; fill: #1f2933; }
+      .subtitle { font: 600 24px 'DejaVu Sans', sans-serif; fill: #355070; }
+      .label { font: 600 21px 'DejaVu Sans', sans-serif; fill: #1f2933; }
+      .body { font: 500 19px 'DejaVu Sans', sans-serif; fill: #243b53; }
+      .small { font: 500 17px 'DejaVu Sans', sans-serif; fill: #486581; }
+      .box-left { fill: #eef6ff; stroke: #457b9d; stroke-width: 3; rx: 24; ry: 24; }
+      .box-right { fill: #f4fdf3; stroke: #588157; stroke-width: 3; rx: 24; ry: 24; }
+      .box-mid { fill: #fff8e8; stroke: #b08900; stroke-width: 3; rx: 24; ry: 24; }
+      .section { fill: #ffffff; stroke: #94a3b8; stroke-width: 2.5; rx: 18; ry: 18; }
+      .arrow { stroke: #264653; stroke-width: 4; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #6c757d; stroke-width: 3; stroke-dasharray: 10 10; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1400" height="900" fill="#fcfcf9"/>
+
+  <text x="700" y="70" text-anchor="middle" class="title">Figure 3.1 - Experimental Stand Architecture</text>
+
+  <text x="345" y="130" text-anchor="middle" class="subtitle">Discrete coordination level</text>
+  <text x="1055" y="130" text-anchor="middle" class="subtitle">Continuous execution level</text>
+
+  <rect x="80" y="165" width="530" height="430" class="box-left"/>
+  <text x="345" y="215" text-anchor="middle" class="label">Discrete MAPF / CBS / Python</text>
+
+  <rect x="120" y="250" width="450" height="80" class="section"/>
+  <text x="345" y="285" text-anchor="middle" class="body">Scenario definition</text>
+  <text x="345" y="312" text-anchor="middle" class="small">landmark graph, start-goal pairs, discrete constraints</text>
+
+  <rect x="120" y="360" width="450" height="90" class="section"/>
+  <text x="345" y="397" text-anchor="middle" class="body">CBS planner</text>
+  <text x="345" y="425" text-anchor="middle" class="small">vertex conflicts, edge conflicts, constrained low-level search</text>
+
+  <rect x="120" y="485" width="450" height="80" class="section"/>
+  <text x="345" y="520" text-anchor="middle" class="body">Discrete outputs</text>
+  <text x="345" y="547" text-anchor="middle" class="small">grid path, conflict-free schedule, GIF / matplotlib visualization</text>
+
+  <rect x="790" y="165" width="530" height="430" class="box-right"/>
+  <text x="1055" y="215" text-anchor="middle" class="label">Gazebo + ROS2 + Nav2</text>
+
+  <rect x="830" y="250" width="450" height="80" class="section"/>
+  <text x="1055" y="285" text-anchor="middle" class="body">Robot simulation layer</text>
+  <text x="1055" y="312" text-anchor="middle" class="small">Gazebo world, TurtleBot robots, namespaces, sensors, AMCL</text>
+
+  <rect x="830" y="360" width="450" height="90" class="section"/>
+  <text x="1055" y="397" text-anchor="middle" class="body">Execution layer</text>
+  <text x="1055" y="425" text-anchor="middle" class="small">Nav2 local planning, obstacle avoidance, goal execution</text>
+
+  <rect x="830" y="485" width="450" height="80" class="section"/>
+  <text x="1055" y="520" text-anchor="middle" class="body">Observed behavior</text>
+  <text x="1055" y="547" text-anchor="middle" class="small">task completion time, waiting, blockage, trajectory behavior</text>
+
+  <rect x="420" y="650" width="560" height="130" class="box-mid"/>
+  <text x="700" y="695" text-anchor="middle" class="label">Hybrid connection between levels</text>
+  <text x="700" y="732" text-anchor="middle" class="body">grid path / waypoint sequence</text>
+  <text x="700" y="760" text-anchor="middle" class="body">execution feedback / task status / progress monitoring</text>
+
+  <path d="M 570 525 C 690 525, 710 525, 830 525" class="arrow"/>
+  <text x="700" y="500" text-anchor="middle" class="small">planned path transfer</text>
+
+  <path d="M 930 650 C 930 620, 1010 610, 1055 595" class="dash"/>
+  <text x="1085" y="640" text-anchor="start" class="small">execution feedback</text>
+
+  <path d="M 470 650 C 470 620, 390 610, 345 595" class="dash"/>
+  <text x="315" y="640" text-anchor="end" class="small">replanning context</text>
+
+  <text x="700" y="845" text-anchor="middle" class="small">
+    Proposed use in dissertation: the left side illustrates centralized discrete coordination,
+  </text>
+  <text x="700" y="870" text-anchor="middle" class="small">
+    the right side illustrates practical execution in ROS2/Gazebo/Nav2, and the lower block explains the hybrid link.
+  </text>
+</svg>

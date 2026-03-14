@@ -1,0 +1,2 @@
+mode,scenario,runs,avg_robot_count,avg_makespan,avg_sum_of_costs,avg_planning_time_sec,avg_execution_time_sec,avg_success_rate,avg_completed_tasks,avg_failed_tasks,avg_blocked_tasks,avg_requeue_count,avg_conflicts_resolved,avg_high_level_nodes,statuses
+discrete_cbs,crossing_center,1,2.0,3.0,5.0,0.000937,0.0,1.0,2.0,0.0,0.0,0.0,1.0,2.0,completed

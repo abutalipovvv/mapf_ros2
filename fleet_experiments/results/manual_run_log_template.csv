@@ -1,0 +1,3 @@
+scenario,mode,success,completion_time_sec,conflict_handling,comment
+single_robot,nav2_only,success,12.4,no_conflict,smooth execution
+crossing_center,hybrid,success,16.8,resolved,needed one replan

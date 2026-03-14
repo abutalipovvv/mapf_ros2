@@ -1,0 +1,37 @@
+scenarios:
+  single_robot:
+    description: Single robot sanity check on the landmark grid.
+    assignments:
+      - robot: robot1
+        start: LM5
+        goal: LM1
+
+  head_on_horizontal:
+    description: Two robots exchange opposite sides through the center row.
+    assignments:
+      - robot: robot1
+        start: LM4
+        goal: LM6
+      - robot: robot2
+        start: LM6
+        goal: LM4
+
+  crossing_center:
+    description: Two robots cross through the central intersection.
+    assignments:
+      - robot: robot1
+        start: LM2
+        goal: LM8
+      - robot: robot2
+        start: LM4
+        goal: LM6
+
+  same_goal_blocked:
+    description: Two robots request the same destination landmark.
+    assignments:
+      - robot: robot1
+        start: LM5
+        goal: LM1
+      - robot: robot2
+        start: LM4
+        goal: LM1

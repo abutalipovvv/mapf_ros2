@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1200" viewBox="0 0 1700 1200">
+  <defs>
+    <style>
+      .title { font: 700 34px 'DejaVu Sans', sans-serif; fill: #1f2933; }
+      .header { font: 700 20px 'DejaVu Sans', sans-serif; fill: #ffffff; }
+      .cell { font: 500 19px 'DejaVu Sans', sans-serif; fill: #243b53; }
+      .formula { font: 600 26px 'DejaVu Sans', sans-serif; fill: #1d3557; }
+      .note { font: 500 17px 'DejaVu Sans', sans-serif; fill: #52606d; }
+      .headbox { fill: #355070; stroke: #355070; stroke-width: 2; }
+      .row1 { fill: #f8fbff; stroke: #94a3b8; stroke-width: 2; }
+      .row2 { fill: #f6fbf4; stroke: #94a3b8; stroke-width: 2; }
+      .row3 { fill: #fff8ef; stroke: #94a3b8; stroke-width: 2; }
+      .outer { fill: none; stroke: #5c677d; stroke-width: 3; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1700" height="1200" fill="#fcfcf9"/>
+  <text x="850" y="65" text-anchor="middle" class="title">Table 3.2 - Metrics and Their Application Domains</text>
+
+  <rect x="70" y="115" width="1560" height="560" class="outer"/>
+
+  <rect x="70" y="115" width="260" height="90" class="headbox"/>
+  <rect x="330" y="115" width="260" height="90" class="headbox"/>
+  <rect x="590" y="115" width="220" height="90" class="headbox"/>
+  <rect x="810" y="115" width="820" height="90" class="headbox"/>
+
+  <text x="200" y="170" text-anchor="middle" class="header">Metric</text>
+  <text x="460" y="170" text-anchor="middle" class="header">Notation</text>
+  <text x="700" y="170" text-anchor="middle" class="header">Modes</text>
+  <text x="1220" y="170" text-anchor="middle" class="header">Interpretation</text>
+
+  <rect x="70" y="205" width="260" height="78" class="row1"/>
+  <rect x="330" y="205" width="260" height="78" class="row1"/>
+  <rect x="590" y="205" width="220" height="78" class="row1"/>
+  <rect x="810" y="205" width="820" height="78" class="row1"/>
+  <text x="200" y="252" text-anchor="middle" class="cell">Makespan</text>
+  <text x="460" y="252" text-anchor="middle" class="cell">T_make</text>
+  <text x="700" y="252" text-anchor="middle" class="cell">R1, R2, R3</text>
+  <text x="1220" y="252" text-anchor="middle" class="cell">time until the last robot completes the scenario</text>
+
+  <rect x="70" y="283" width="260" height="78" class="row2"/>
+  <rect x="330" y="283" width="260" height="78" class="row2"/>
+  <rect x="590" y="283" width="220" height="78" class="row2"/>
+  <rect x="810" y="283" width="820" height="78" class="row2"/>
+  <text x="200" y="330" text-anchor="middle" class="cell">SOC</text>
+  <text x="460" y="330" text-anchor="middle" class="cell">SOC</text>
+  <text x="700" y="330" text-anchor="middle" class="cell">R1</text>
+  <text x="1220" y="330" text-anchor="middle" class="cell">sum of discrete path costs in the centralized model</text>
+
+  <rect x="70" y="361" width="260" height="78" class="row3"/>
+  <rect x="330" y="361" width="260" height="78" class="row3"/>
+  <rect x="590" y="361" width="220" height="78" class="row3"/>
+  <rect x="810" y="361" width="820" height="78" class="row3"/>
+  <text x="200" y="408" text-anchor="middle" class="cell">Total traveled distance</text>
+  <text x="460" y="408" text-anchor="middle" class="cell">D_sum</text>
+  <text x="700" y="408" text-anchor="middle" class="cell">R2, R3</text>
+  <text x="1220" y="408" text-anchor="middle" class="cell">total actual traveled distance of all robots</text>
+
+  <rect x="70" y="439" width="260" height="78" class="row1"/>
+  <rect x="330" y="439" width="260" height="78" class="row1"/>
+  <rect x="590" y="439" width="220" height="78" class="row1"/>
+  <rect x="810" y="439" width="820" height="78" class="row1"/>
+  <text x="200" y="486" text-anchor="middle" class="cell">Success rate</text>
+  <text x="460" y="486" text-anchor="middle" class="cell">SR</text>
+  <text x="700" y="486" text-anchor="middle" class="cell">R2, R3</text>
+  <text x="1220" y="486" text-anchor="middle" class="cell">fraction of successful runs</text>
+
+  <rect x="70" y="517" width="260" height="78" class="row2"/>
+  <rect x="330" y="517" width="260" height="78" class="row2"/>
+  <rect x="590" y="517" width="220" height="78" class="row2"/>
+  <rect x="810" y="517" width="820" height="78" class="row2"/>
+  <text x="200" y="564" text-anchor="middle" class="cell">Deadlock rate</text>
+  <text x="460" y="564" text-anchor="middle" class="cell">DR</text>
+  <text x="700" y="564" text-anchor="middle" class="cell">R2, R3</text>
+  <text x="1220" y="564" text-anchor="middle" class="cell">fraction of runs that ended in deadlock or no-progress state</text>
+
+  <rect x="70" y="595" width="260" height="78" class="row3"/>
+  <rect x="330" y="595" width="260" height="78" class="row3"/>
+  <rect x="590" y="595" width="220" height="78" class="row3"/>
+  <rect x="810" y="595" width="820" height="78" class="row3"/>
+  <text x="200" y="642" text-anchor="middle" class="cell">Number of replans</text>
+  <text x="460" y="642" text-anchor="middle" class="cell">N_replan</text>
+  <text x="700" y="642" text-anchor="middle" class="cell">R3</text>
+  <text x="1220" y="642" text-anchor="middle" class="cell">adaptation load of the hybrid controller</text>
+
+  <text x="850" y="745" text-anchor="middle" class="title">Recommended formulas</text>
+
+  <text x="220" y="830" class="formula">Formula 3.3: T_make = max(T_k),  k ∈ {1, ..., N}</text>
+  <text x="220" y="895" class="formula">Formula 3.4: SOC = Σ C_k,  k = 1..N</text>
+  <text x="220" y="960" class="formula">Formula 3.5: D_sum = Σ D_k,  k = 1..N</text>
+  <text x="220" y="1025" class="formula">Formula 3.6: SR = N_success / N_runs</text>
+  <text x="220" y="1090" class="formula">Formula 3.7: DR = N_deadlock / N_runs</text>
+
+  <text x="1200" y="830" class="note">R1: centralized discrete CBS reference</text>
+  <text x="1200" y="875" class="note">R2: decentralized Nav2-only execution</text>
+  <text x="1200" y="920" class="note">R3: hybrid CBS + FleetManager + Nav2</text>
+  <text x="1200" y="990" class="note">Suggested note:</text>
+  <text x="1200" y="1020" class="note">not all metrics apply to all modes;</text>
+  <text x="1200" y="1050" class="note">SOC is meaningful only for the discrete centralized regime,</text>
+  <text x="1200" y="1080" class="note">while traveled distance, success rate, deadlock rate</text>
+  <text x="1200" y="1110" class="note">and replanning load are evaluated in Gazebo-based runs.</text>
+</svg>

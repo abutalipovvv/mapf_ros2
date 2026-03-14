@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760">
+  <defs>
+    <style>
+      .title { font: 700 34px 'DejaVu Sans', sans-serif; fill: #1f2933; }
+      .header { font: 700 20px 'DejaVu Sans', sans-serif; fill: #ffffff; }
+      .cell { font: 500 20px 'DejaVu Sans', sans-serif; fill: #243b53; }
+      .note { font: 500 18px 'DejaVu Sans', sans-serif; fill: #52606d; }
+      .headbox { fill: #355070; stroke: #355070; stroke-width: 2; }
+      .row1 { fill: #f8fbff; stroke: #94a3b8; stroke-width: 2; }
+      .row2 { fill: #f6fbf4; stroke: #94a3b8; stroke-width: 2; }
+      .outer { fill: none; stroke: #5c677d; stroke-width: 3; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1500" height="760" fill="#fcfcf9"/>
+  <text x="750" y="70" text-anchor="middle" class="title">Table 3.1 - Map and Discretization Parameters</text>
+
+  <rect x="90" y="130" width="1320" height="360" class="outer"/>
+
+  <rect x="90" y="130" width="180" height="90" class="headbox"/>
+  <rect x="270" y="130" width="220" height="90" class="headbox"/>
+  <rect x="490" y="130" width="220" height="90" class="headbox"/>
+  <rect x="710" y="130" width="120" height="90" class="headbox"/>
+  <rect x="830" y="130" width="120" height="90" class="headbox"/>
+  <rect x="950" y="130" width="460" height="90" class="headbox"/>
+
+  <text x="180" y="185" text-anchor="middle" class="header">Map</text>
+  <text x="380" y="172" text-anchor="middle" class="header">Grid size</text>
+  <text x="380" y="198" text-anchor="middle" class="header">(cells)</text>
+  <text x="600" y="172" text-anchor="middle" class="header">Discretization</text>
+  <text x="600" y="198" text-anchor="middle" class="header">step r</text>
+  <text x="770" y="185" text-anchor="middle" class="header">x₀</text>
+  <text x="890" y="185" text-anchor="middle" class="header">y₀</text>
+  <text x="1180" y="185" text-anchor="middle" class="header">Environment type</text>
+
+  <rect x="90" y="220" width="180" height="110" class="row1"/>
+  <rect x="270" y="220" width="220" height="110" class="row1"/>
+  <rect x="490" y="220" width="220" height="110" class="row1"/>
+  <rect x="710" y="220" width="120" height="110" class="row1"/>
+  <rect x="830" y="220" width="120" height="110" class="row1"/>
+  <rect x="950" y="220" width="460" height="110" class="row1"/>
+
+  <text x="180" y="286" text-anchor="middle" class="cell">Map A</text>
+  <text x="380" y="286" text-anchor="middle" class="cell">3 × 3</text>
+  <text x="600" y="286" text-anchor="middle" class="cell">2.0</text>
+  <text x="770" y="286" text-anchor="middle" class="cell">-2.0</text>
+  <text x="890" y="286" text-anchor="middle" class="cell">-2.0</text>
+  <text x="1180" y="272" text-anchor="middle" class="cell">open / low-constrained</text>
+  <text x="1180" y="300" text-anchor="middle" class="cell">environment</text>
+
+  <rect x="90" y="330" width="180" height="110" class="row2"/>
+  <rect x="270" y="330" width="220" height="110" class="row2"/>
+  <rect x="490" y="330" width="220" height="110" class="row2"/>
+  <rect x="710" y="330" width="120" height="110" class="row2"/>
+  <rect x="830" y="330" width="120" height="110" class="row2"/>
+  <rect x="950" y="330" width="460" height="110" class="row2"/>
+
+  <text x="180" y="396" text-anchor="middle" class="cell">Map B</text>
+  <text x="380" y="396" text-anchor="middle" class="cell">3 × 3</text>
+  <text x="600" y="396" text-anchor="middle" class="cell">2.0</text>
+  <text x="770" y="396" text-anchor="middle" class="cell">-2.0</text>
+  <text x="890" y="396" text-anchor="middle" class="cell">-2.0</text>
+  <text x="1180" y="382" text-anchor="middle" class="cell">corridor / conflict-prone</text>
+  <text x="1180" y="410" text-anchor="middle" class="cell">environment</text>
+
+  <text x="750" y="555" text-anchor="middle" class="note">
+    Current values correspond to the implemented landmark graph LM1..LM9 with coordinates x, y ∈ {-2, 0, 2}.
+  </text>
+  <text x="750" y="590" text-anchor="middle" class="note">
+    For both maps, the same discrete coordinate frame is used; the difference is in the environmental structure and conflict density.
+  </text>
+  <text x="750" y="655" text-anchor="middle" class="note">
+    Suggested caption: Parameters of the discrete maps and coordinate conversion used in the experimental study.
+  </text>
+</svg>

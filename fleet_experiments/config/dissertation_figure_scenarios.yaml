@@ -1,0 +1,68 @@
+scenarios:
+  single_robot_spawn:
+    description: Single robot movement from LM5 to LM1.
+    assignments:
+      - robot: robot1
+        start: LM5
+        goal: LM1
+
+  release_center_spawn:
+    description: robot1 leaves LM5 and robot2 moves from LM4 into the freed center cell.
+    assignments:
+      - robot: robot1
+        start: LM5
+        goal: LM6
+      - robot: robot2
+        start: LM4
+        goal: LM5
+
+  crossing_from_spawn:
+    description: robot1 moves from LM5 to LM8 while robot2 passes from LM4 to LM6.
+    assignments:
+      - robot: robot1
+        start: LM5
+        goal: LM8
+      - robot: robot2
+        start: LM4
+        goal: LM6
+
+  complexity_multi_robot:
+    description: Three robots create multiple interactions on the same 3x3 landmark graph.
+    assignments:
+      - robot: robot1
+        start: LM1
+        goal: LM9
+      - robot: robot2
+        start: LM4
+        goal: LM6
+      - robot: robot3
+        start: LM8
+        goal: LM2
+
+  complexity_eight_agents:
+    description: Eight-agent high-conflict case on the 3x3 landmark graph.
+    assignments:
+      - robot: robot1
+        start: LM1
+        goal: LM9
+      - robot: robot2
+        start: LM2
+        goal: LM8
+      - robot: robot3
+        start: LM3
+        goal: LM7
+      - robot: robot4
+        start: LM4
+        goal: LM6
+      - robot: robot5
+        start: LM6
+        goal: LM4
+      - robot: robot6
+        start: LM7
+        goal: LM3
+      - robot: robot7
+        start: LM8
+        goal: LM2
+      - robot: robot8
+        start: LM9
+        goal: LM1

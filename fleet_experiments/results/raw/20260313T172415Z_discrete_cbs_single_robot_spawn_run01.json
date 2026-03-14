@@ -1,0 +1,99 @@
+{
+  "mode": "discrete_cbs",
+  "scenario": "single_robot_spawn",
+  "run_index": 1,
+  "status": "completed",
+  "metrics": {
+    "robot_count": 1,
+    "makespan": 2,
+    "sum_of_costs": 3,
+    "planning_time_sec": 0.095823,
+    "execution_time_sec": 0.0,
+    "success_rate": 1.0,
+    "completed_tasks": 1,
+    "failed_tasks": 0,
+    "blocked_tasks": 0,
+    "requeue_count": 0,
+    "notes": "external_cbs_reference"
+  },
+  "artifacts": {
+    "input_yaml": "/home/kaisar/go2_ros2_sim_py/fleet_experiments/results/raw/discrete_cbs/single_robot_spawn_run01_input.yaml",
+    "output_yaml": "/home/kaisar/go2_ros2_sim_py/fleet_experiments/results/raw/discrete_cbs/single_robot_spawn_run01_output.yaml",
+    "planner_stdout": "solution found\n",
+    "planner_stderr": "",
+    "discrete_paths": {
+      "robot1": [
+        "LM5",
+        "LM4",
+        "LM1"
+      ]
+    },
+    "schedule": {
+      "robot1": [
+        {
+          "t": 0,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "t": 1,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "t": 2,
+          "x": 0,
+          "y": 2
+        }
+      ]
+    },
+    "visualize_command": "/usr/bin/python3 /home/kaisar/go2_ros2_sim_py/multi_agent_path_planning/centralized/visualize.py /home/kaisar/go2_ros2_sim_py/fleet_experiments/results/raw/discrete_cbs/single_robot_spawn_run01_input.yaml /home/kaisar/go2_ros2_sim_py/fleet_experiments/results/raw/discrete_cbs/single_robot_spawn_run01_output.yaml",
+    "visualize_returncode": null,
+    "scenario_description": "Single robot from actual Gazebo spawn LM5.",
+    "input_payload": {
+      "agents": [
+        {
+          "name": "robot1",
+          "start": [
+            1,
+            1
+          ],
+          "goal": [
+            0,
+            2
+          ]
+        }
+      ],
+      "map": {
+        "dimensions": [
+          3,
+          3
+        ],
+        "obstacles": []
+      }
+    },
+    "output_payload": {
+      "cost": 3,
+      "schedule": {
+        "robot1": [
+          {
+            "t": 0,
+            "x": 1,
+            "y": 1
+          },
+          {
+            "t": 1,
+            "x": 0,
+            "y": 1
+          },
+          {
+            "t": 2,
+            "x": 0,
+            "y": 2
+          }
+        ]
+      }
+    }
+  },
+  "timestamp_utc": "20260313T172415Z"
+}

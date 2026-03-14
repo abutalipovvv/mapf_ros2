@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="900" viewBox="0 0 1500 900">
+  <defs>
+    <style>
+      .title { font: 700 34px 'DejaVu Sans', sans-serif; fill: #1f2933; }
+      .subtitle { font: 600 24px 'DejaVu Sans', sans-serif; fill: #7f5539; }
+      .label { font: 600 21px 'DejaVu Sans', sans-serif; fill: #243b53; }
+      .body { font: 500 18px 'DejaVu Sans', sans-serif; fill: #486581; }
+      .panel-left { fill: #fff7ef; stroke: #bc6c25; stroke-width: 3; rx: 22; ry: 22; }
+      .panel-right { fill: #f4faf1; stroke: #6a994e; stroke-width: 3; rx: 22; ry: 22; }
+      .inner { fill: #ffffff; stroke: #94a3b8; stroke-width: 2.5; stroke-dasharray: 10 8; rx: 18; ry: 18; }
+      .node { fill: #ffffff; stroke: #7f5539; stroke-width: 2.8; }
+      .edge { stroke: #8d99ae; stroke-width: 5; }
+      .wall { fill: #d9d9d9; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1500" height="900" fill="#fcfcf9"/>
+
+  <text x="750" y="70" text-anchor="middle" class="title">Figure 3.3 - Map B (Corridor Environment)</text>
+
+  <rect x="70" y="120" width="620" height="690" class="panel-left"/>
+  <text x="380" y="165" text-anchor="middle" class="subtitle">Discrete map representation</text>
+  <rect x="110" y="200" width="540" height="560" class="inner"/>
+
+  <rect x="150" y="230" width="80" height="500" class="wall"/>
+  <rect x="530" y="230" width="80" height="500" class="wall"/>
+  <rect x="270" y="230" width="220" height="80" class="wall"/>
+  <rect x="270" y="650" width="220" height="80" class="wall"/>
+  <rect x="350" y="390" width="60" height="170" class="wall"/>
+
+  <line x1="250" y1="350" x2="350" y2="350" class="edge"/>
+  <line x1="410" y1="350" x2="510" y2="350" class="edge"/>
+  <line x1="250" y1="610" x2="350" y2="610" class="edge"/>
+  <line x1="410" y1="610" x2="510" y2="610" class="edge"/>
+  <line x1="250" y1="350" x2="250" y2="610" class="edge"/>
+  <line x1="510" y1="350" x2="510" y2="610" class="edge"/>
+  <line x1="380" y1="315" x2="380" y2="390" class="edge"/>
+  <line x1="380" y1="560" x2="380" y2="645" class="edge"/>
+
+  <circle cx="250" cy="350" r="26" class="node"/>
+  <circle cx="380" cy="350" r="26" class="node"/>
+  <circle cx="510" cy="350" r="26" class="node"/>
+  <circle cx="250" cy="610" r="26" class="node"/>
+  <circle cx="380" cy="610" r="26" class="node"/>
+  <circle cx="510" cy="610" r="26" class="node"/>
+
+  <text x="250" y="357" text-anchor="middle" class="body">LM1</text>
+  <text x="380" y="357" text-anchor="middle" class="body">LM2</text>
+  <text x="510" y="357" text-anchor="middle" class="body">LM3</text>
+  <text x="250" y="617" text-anchor="middle" class="body">LM4</text>
+  <text x="380" y="617" text-anchor="middle" class="body">LM5</text>
+  <text x="510" y="617" text-anchor="middle" class="body">LM6</text>
+
+  <text x="380" y="735" text-anchor="middle" class="body">Suggested content: narrow passages, bottlenecks, corridor-style connectivity</text>
+
+  <rect x="810" y="120" width="620" height="690" class="panel-right"/>
+  <text x="1120" y="165" text-anchor="middle" class="subtitle">Gazebo view of the same corridor environment</text>
+  <rect x="850" y="200" width="540" height="560" class="inner"/>
+
+  <text x="1120" y="430" text-anchor="middle" class="label">Insert Gazebo screenshot here</text>
+  <text x="1120" y="470" text-anchor="middle" class="body">Use a view where narrow corridors and bottlenecks are clearly visible</text>
+  <text x="1120" y="502" text-anchor="middle" class="body">The screenshot should correspond to the same corridor map used in the discrete model</text>
+  <text x="1120" y="735" text-anchor="middle" class="body">Suggested content: corridor walls, narrow intersections, robot spawn points</text>
+
+  <text x="750" y="855" text-anchor="middle" class="body">
+    Caption suggestion: Map B in two representations: discrete corridor graph on the left and the corresponding Gazebo scene on the right.
+  </text>
+</svg>

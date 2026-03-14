@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <style>
+      .title { font: 700 34px 'DejaVu Sans', sans-serif; fill: #1f2933; }
+      .subtitle { font: 600 24px 'DejaVu Sans', sans-serif; fill: #355070; }
+      .label { font: 600 21px 'DejaVu Sans', sans-serif; fill: #243b53; }
+      .body { font: 500 18px 'DejaVu Sans', sans-serif; fill: #486581; }
+      .small { font: 500 17px 'DejaVu Sans', sans-serif; fill: #5c677d; }
+      .panel-left { fill: #f3f8ff; stroke: #457b9d; stroke-width: 3; rx: 22; ry: 22; }
+      .panel-right { fill: #fff7ef; stroke: #bc6c25; stroke-width: 3; rx: 22; ry: 22; }
+      .inner { fill: #ffffff; stroke: #94a3b8; stroke-width: 2.5; stroke-dasharray: 10 8; rx: 18; ry: 18; }
+      .divider { stroke: #8d99ae; stroke-width: 3; stroke-dasharray: 10 10; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="900" fill="#fcfcf9"/>
+  <text x="800" y="70" text-anchor="middle" class="title">Figure 3.7 - Growth of Planning Complexity with Scenario Size</text>
+
+  <rect x="70" y="120" width="680" height="660" class="panel-left"/>
+  <text x="410" y="165" text-anchor="middle" class="subtitle">Smaller / simpler scenario</text>
+  <rect x="110" y="205" width="600" height="470" class="inner"/>
+  <text x="410" y="430" text-anchor="middle" class="label">Insert frames from a smaller case here</text>
+  <text x="410" y="470" text-anchor="middle" class="body">Example: simpler graph, fewer agents, fewer conflicts</text>
+  <text x="410" y="510" text-anchor="middle" class="body">Suggested source: earlier CBS GIF / fewer-agent scenario</text>
+  <text x="410" y="735" text-anchor="middle" class="small">Example caption inside panel: lower conflict density and fewer constraint branches</text>
+
+  <rect x="850" y="120" width="680" height="660" class="panel-right"/>
+  <text x="1190" y="165" text-anchor="middle" class="subtitle">Larger / more complex scenario</text>
+  <rect x="890" y="205" width="600" height="470" class="inner"/>
+  <text x="1190" y="430" text-anchor="middle" class="label">Insert frames from a more complex case here</text>
+  <text x="1190" y="470" text-anchor="middle" class="body">Example: larger map, more agents, more interactions</text>
+  <text x="1190" y="510" text-anchor="middle" class="body">Suggested source: more difficult CBS GIF / denser multi-agent scenario</text>
+  <text x="1190" y="735" text-anchor="middle" class="small">Example caption inside panel: more conflicts, longer schedules, larger search effort</text>
+
+  <line x1="800" y1="140" x2="800" y2="760" class="divider"/>
+
+  <text x="800" y="830" text-anchor="middle" class="body">
+    Suggested interpretation: as the number of agents or the structural complexity of the map increases,
+  </text>
+  <text x="800" y="860" text-anchor="middle" class="body">
+    the centralized CBS planner requires resolving a larger number of interactions and explores a larger conflict tree.
+  </text>
+</svg>

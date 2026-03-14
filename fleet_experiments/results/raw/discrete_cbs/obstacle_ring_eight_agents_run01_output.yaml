@@ -1,0 +1,58 @@
+cost: 16
+schedule:
+  robot1:
+  - t: 0
+    x: 0
+    y: 4
+  - t: 1
+    x: 1
+    y: 4
+  robot2:
+  - t: 0
+    x: 1
+    y: 4
+  - t: 1
+    x: 2
+    y: 4
+  robot3:
+  - t: 0
+    x: 2
+    y: 4
+  - t: 1
+    x: 3
+    y: 4
+  robot4:
+  - t: 0
+    x: 3
+    y: 4
+  - t: 1
+    x: 4
+    y: 4
+  robot5:
+  - t: 0
+    x: 0
+    y: 0
+  - t: 1
+    x: 1
+    y: 0
+  robot6:
+  - t: 0
+    x: 1
+    y: 0
+  - t: 1
+    x: 2
+    y: 0
+  robot7:
+  - t: 0
+    x: 2
+    y: 0
+  - t: 1
+    x: 3
+    y: 0
+  robot8:
+  - t: 0
+    x: 3
+    y: 0
+  - t: 1
+    x: 4
+    y: 0

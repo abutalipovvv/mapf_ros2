@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1080" viewBox="0 0 1700 1080">
+  <defs>
+    <style>
+      .title { font: 700 34px 'DejaVu Sans', sans-serif; fill: #1f2933; }
+      .header { font: 700 20px 'DejaVu Sans', sans-serif; fill: #ffffff; }
+      .cell { font: 500 19px 'DejaVu Sans', sans-serif; fill: #243b53; }
+      .note { font: 500 17px 'DejaVu Sans', sans-serif; fill: #52606d; }
+      .headbox { fill: #355070; stroke: #355070; stroke-width: 2; }
+      .row1 { fill: #f8fbff; stroke: #94a3b8; stroke-width: 2; }
+      .row2 { fill: #f6fbf4; stroke: #94a3b8; stroke-width: 2; }
+      .row3 { fill: #fff8ef; stroke: #94a3b8; stroke-width: 2; }
+      .outer { fill: none; stroke: #5c677d; stroke-width: 3; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1700" height="1080" fill="#fcfcf9"/>
+  <text x="850" y="65" text-anchor="middle" class="title">Table 3.3 - Experimental Protocol</text>
+
+  <rect x="60" y="110" width="1580" height="700" class="outer"/>
+
+  <rect x="60" y="110" width="150" height="90" class="headbox"/>
+  <rect x="210" y="110" width="220" height="90" class="headbox"/>
+  <rect x="430" y="110" width="180" height="90" class="headbox"/>
+  <rect x="610" y="110" width="220" height="90" class="headbox"/>
+  <rect x="830" y="110" width="810" height="90" class="headbox"/>
+
+  <text x="135" y="165" text-anchor="middle" class="header">Map</text>
+  <text x="320" y="152" text-anchor="middle" class="header">Number of</text>
+  <text x="320" y="178" text-anchor="middle" class="header">robots N</text>
+  <text x="520" y="165" text-anchor="middle" class="header">Mode</text>
+  <text x="720" y="152" text-anchor="middle" class="header">Number of</text>
+  <text x="720" y="178" text-anchor="middle" class="header">repetitions</text>
+  <text x="1235" y="165" text-anchor="middle" class="header">Recorded metrics</text>
+
+  <rect x="60" y="200" width="150" height="85" class="row1"/>
+  <rect x="210" y="200" width="220" height="85" class="row1"/>
+  <rect x="430" y="200" width="180" height="85" class="row1"/>
+  <rect x="610" y="200" width="220" height="85" class="row1"/>
+  <rect x="830" y="200" width="810" height="85" class="row1"/>
+  <text x="135" y="250" text-anchor="middle" class="cell">A</text>
+  <text x="320" y="250" text-anchor="middle" class="cell">3</text>
+  <text x="520" y="250" text-anchor="middle" class="cell">R1</text>
+  <text x="720" y="250" text-anchor="middle" class="cell">1 or 5</text>
+  <text x="1235" y="250" text-anchor="middle" class="cell">makespan, SOC, planning time</text>
+
+  <rect x="60" y="285" width="150" height="85" class="row2"/>
+  <rect x="210" y="285" width="220" height="85" class="row2"/>
+  <rect x="430" y="285" width="180" height="85" class="row2"/>
+  <rect x="610" y="285" width="220" height="85" class="row2"/>
+  <rect x="830" y="285" width="810" height="85" class="row2"/>
+  <text x="135" y="335" text-anchor="middle" class="cell">A</text>
+  <text x="320" y="335" text-anchor="middle" class="cell">3</text>
+  <text x="520" y="335" text-anchor="middle" class="cell">R2</text>
+  <text x="720" y="335" text-anchor="middle" class="cell">5</text>
+  <text x="1235" y="335" text-anchor="middle" class="cell">makespan, success, deadlock, distance</text>
+
+  <rect x="60" y="370" width="150" height="85" class="row3"/>
+  <rect x="210" y="370" width="220" height="85" class="row3"/>
+  <rect x="430" y="370" width="180" height="85" class="row3"/>
+  <rect x="610" y="370" width="220" height="85" class="row3"/>
+  <rect x="830" y="370" width="810" height="85" class="row3"/>
+  <text x="135" y="420" text-anchor="middle" class="cell">A</text>
+  <text x="320" y="420" text-anchor="middle" class="cell">3</text>
+  <text x="520" y="420" text-anchor="middle" class="cell">R3</text>
+  <text x="720" y="420" text-anchor="middle" class="cell">5</text>
+  <text x="1235" y="420" text-anchor="middle" class="cell">makespan, success, deadlock, distance, replans</text>
+
+  <rect x="60" y="455" width="150" height="85" class="row1"/>
+  <rect x="210" y="455" width="220" height="85" class="row1"/>
+  <rect x="430" y="455" width="180" height="85" class="row1"/>
+  <rect x="610" y="455" width="220" height="85" class="row1"/>
+  <rect x="830" y="455" width="810" height="85" class="row1"/>
+  <text x="135" y="505" text-anchor="middle" class="cell">A</text>
+  <text x="320" y="505" text-anchor="middle" class="cell">8</text>
+  <text x="520" y="505" text-anchor="middle" class="cell">R1</text>
+  <text x="720" y="505" text-anchor="middle" class="cell">1 or 5</text>
+  <text x="1235" y="505" text-anchor="middle" class="cell">makespan, SOC, planning time</text>
+
+  <rect x="60" y="540" width="150" height="85" class="row2"/>
+  <rect x="210" y="540" width="220" height="85" class="row2"/>
+  <rect x="430" y="540" width="180" height="85" class="row2"/>
+  <rect x="610" y="540" width="220" height="85" class="row2"/>
+  <rect x="830" y="540" width="810" height="85" class="row2"/>
+  <text x="135" y="590" text-anchor="middle" class="cell">A</text>
+  <text x="320" y="590" text-anchor="middle" class="cell">8</text>
+  <text x="520" y="590" text-anchor="middle" class="cell">R2</text>
+  <text x="720" y="590" text-anchor="middle" class="cell">5</text>
+  <text x="1235" y="590" text-anchor="middle" class="cell">makespan, success, deadlock, distance</text>
+
+  <rect x="60" y="625" width="150" height="85" class="row3"/>
+  <rect x="210" y="625" width="220" height="85" class="row3"/>
+  <rect x="430" y="625" width="180" height="85" class="row3"/>
+  <rect x="610" y="625" width="220" height="85" class="row3"/>
+  <rect x="830" y="625" width="810" height="85" class="row3"/>
+  <text x="135" y="675" text-anchor="middle" class="cell">A</text>
+  <text x="320" y="675" text-anchor="middle" class="cell">8</text>
+  <text x="520" y="675" text-anchor="middle" class="cell">R3</text>
+  <text x="720" y="675" text-anchor="middle" class="cell">5</text>
+  <text x="1235" y="675" text-anchor="middle" class="cell">makespan, success, deadlock, distance, replans</text>
+
+  <rect x="60" y="710" width="150" height="85" class="row1"/>
+  <rect x="210" y="710" width="220" height="85" class="row1"/>
+  <rect x="430" y="710" width="180" height="85" class="row1"/>
+  <rect x="610" y="710" width="220" height="85" class="row1"/>
+  <rect x="830" y="710" width="810" height="85" class="row1"/>
+  <text x="135" y="760" text-anchor="middle" class="cell">B</text>
+  <text x="320" y="760" text-anchor="middle" class="cell">8</text>
+  <text x="520" y="760" text-anchor="middle" class="cell">R1 / R2 / R3</text>
+  <text x="720" y="760" text-anchor="middle" class="cell">same as above</text>
+  <text x="1235" y="760" text-anchor="middle" class="cell">same metric sets, but for narrow-space / corridor scenarios</text>
+
+  <text x="850" y="880" text-anchor="middle" class="title">Interpretation</text>
+  <text x="850" y="935" text-anchor="middle" class="note">
+    R1 is a discrete centralized reference and therefore uses SOC and planning time as key metrics.
+  </text>
+  <text x="850" y="970" text-anchor="middle" class="note">
+    R2 and R3 are evaluated in Gazebo; they use execution-oriented metrics such as success, deadlock, traveled distance, and makespan.
+  </text>
+  <text x="850" y="1005" text-anchor="middle" class="note">
+    The hybrid regime R3 additionally records the number of replans as an indicator of adaptation load.
+  </text>
+</svg>

@@ -1,0 +1,138 @@
+{
+  "mode": "discrete_cbs",
+  "scenario": "crossing_from_spawn",
+  "run_index": 1,
+  "status": "completed",
+  "metrics": {
+    "robot_count": 2,
+    "makespan": 2,
+    "sum_of_costs": 5,
+    "planning_time_sec": 0.10852,
+    "execution_time_sec": 0.0,
+    "success_rate": 1.0,
+    "completed_tasks": 2,
+    "failed_tasks": 0,
+    "blocked_tasks": 0,
+    "requeue_count": 0,
+    "notes": "external_cbs_reference"
+  },
+  "artifacts": {
+    "input_yaml": "/home/kaisar/go2_ros2_sim_py/fleet_experiments/results/raw/discrete_cbs/crossing_from_spawn_run01_input.yaml",
+    "output_yaml": "/home/kaisar/go2_ros2_sim_py/fleet_experiments/results/raw/discrete_cbs/crossing_from_spawn_run01_output.yaml",
+    "planner_stdout": "solution found\n",
+    "planner_stderr": "",
+    "discrete_paths": {
+      "robot1": [
+        "LM5",
+        "LM8"
+      ],
+      "robot2": [
+        "LM4",
+        "LM5",
+        "LM6"
+      ]
+    },
+    "schedule": {
+      "robot1": [
+        {
+          "t": 0,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "t": 1,
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "robot2": [
+        {
+          "t": 0,
+          "x": 0,
+          "y": 1
+        },
+        {
+          "t": 1,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "t": 2,
+          "x": 2,
+          "y": 1
+        }
+      ]
+    },
+    "visualize_command": "/usr/bin/python3 /home/kaisar/go2_ros2_sim_py/multi_agent_path_planning/centralized/visualize.py /home/kaisar/go2_ros2_sim_py/fleet_experiments/results/raw/discrete_cbs/crossing_from_spawn_run01_input.yaml /home/kaisar/go2_ros2_sim_py/fleet_experiments/results/raw/discrete_cbs/crossing_from_spawn_run01_output.yaml",
+    "visualize_returncode": null,
+    "scenario_description": "robot1 leaves LM5 downward while robot2 passes from LM4 to LM6.",
+    "input_payload": {
+      "agents": [
+        {
+          "name": "robot1",
+          "start": [
+            1,
+            1
+          ],
+          "goal": [
+            1,
+            0
+          ]
+        },
+        {
+          "name": "robot2",
+          "start": [
+            0,
+            1
+          ],
+          "goal": [
+            2,
+            1
+          ]
+        }
+      ],
+      "map": {
+        "dimensions": [
+          3,
+          3
+        ],
+        "obstacles": []
+      }
+    },
+    "output_payload": {
+      "cost": 5,
+      "schedule": {
+        "robot1": [
+          {
+            "t": 0,
+            "x": 1,
+            "y": 1
+          },
+          {
+            "t": 1,
+            "x": 1,
+            "y": 0
+          }
+        ],
+        "robot2": [
+          {
+            "t": 0,
+            "x": 0,
+            "y": 1
+          },
+          {
+            "t": 1,
+            "x": 1,
+            "y": 1
+          },
+          {
+            "t": 2,
+            "x": 2,
+            "y": 1
+          }
+        ]
+      }
+    }
+  },
+  "timestamp_utc": "20260313T172416Z"
+}

@@ -178,6 +178,8 @@ def main():
 
     rclpy.init()
     node = TaskManagerNode(args.robot, wait_status=args.wait_status)
+    sequence_start_t = time.monotonic()
+    completed_goals = 0
 
     # Чуть подождать, чтобы publisher успел зарегистрироваться
     time.sleep(0.5)
@@ -196,6 +198,7 @@ def main():
 
     for i, goal in enumerate(goals):
         task_id = f"{args.robot}-{i + 1}-{uuid4().hex[:8]}"
+        goal_start_t = time.monotonic()
         node.send_task(
             goal=goal,
             task_id=task_id,
@@ -212,7 +215,13 @@ def main():
                 )
                 break
 
+            elapsed = time.monotonic() - goal_start_t
             node.get_logger().info(f"Goal {goal} terminal status: {result_state}")
+            node.get_logger().info(
+                f"Goal {goal} finished in {elapsed:.2f}s"
+            )
+            if result_state == "completed":
+                completed_goals += 1
             if result_state == "failed" and not args.continue_on_failure:
                 node.get_logger().warn(
                     "Stopping sequence because goal failed "
@@ -222,6 +231,12 @@ def main():
 
         if i < len(goals) - 1:
             time.sleep(max(0.0, args.delay_sec))
+    if mode == "task" and args.wait_status:
+        total_elapsed = time.monotonic() - sequence_start_t
+        node.get_logger().info(
+            f"Sequence finished: completed {completed_goals}/{len(goals)} goals "
+            f"in {total_elapsed:.2f}s"
+        )
     time.sleep(0.5)
 
     node.destroy_node()

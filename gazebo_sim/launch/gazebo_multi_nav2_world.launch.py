@@ -146,7 +146,7 @@ def generate_launch_description():
         description='Enable rviz launch'
     ))
 
-    tb3_model = os.environ.get('TURTLEBOT3_MODEL', 'burger')
+    tb3_model = os.environ.get('TURTLEBOT3_MODEL', 'waffle')
     model_folder = f'turtlebot3_{tb3_model}'
 
     urdf_file_name = f'turtlebot3_{tb3_model}.urdf'

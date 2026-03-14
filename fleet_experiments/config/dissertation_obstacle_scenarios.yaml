@@ -1,0 +1,104 @@
+scenarios:
+  obstacle_bottleneck_eight_agents:
+    description: Eight-agent bottleneck case on a denser 5x5 landmark graph with static obstacles.
+    obstacles:
+      - LM07
+      - LM09
+      - LM17
+      - LM19
+    assignments:
+      - robot: robot1
+        start: LM01
+        goal: LM25
+      - robot: robot2
+        start: LM03
+        goal: LM23
+      - robot: robot3
+        start: LM05
+        goal: LM21
+      - robot: robot4
+        start: LM11
+        goal: LM15
+      - robot: robot5
+        start: LM15
+        goal: LM11
+      - robot: robot6
+        start: LM21
+        goal: LM05
+      - robot: robot7
+        start: LM23
+        goal: LM03
+      - robot: robot8
+        start: LM25
+        goal: LM01
+
+  obstacle_ring_eight_agents:
+    description: Eight-agent obstacle-constrained ring rotation on a denser 5x5 landmark graph.
+    obstacles:
+      - LM07
+      - LM08
+      - LM09
+      - LM12
+      - LM13
+      - LM14
+      - LM17
+      - LM18
+      - LM19
+    assignments:
+      - robot: robot1
+        start: LM01
+        goal: LM02
+      - robot: robot2
+        start: LM02
+        goal: LM03
+      - robot: robot3
+        start: LM03
+        goal: LM04
+      - robot: robot4
+        start: LM04
+        goal: LM05
+      - robot: robot5
+        start: LM21
+        goal: LM22
+      - robot: robot6
+        start: LM22
+        goal: LM23
+      - robot: robot7
+        start: LM23
+        goal: LM24
+      - robot: robot8
+        start: LM24
+        goal: LM25
+
+  obstacle_bottleneck_waiting_eight_agents:
+    description: Eight-agent bottleneck case with a single central passage that forces visible waiting.
+    obstacles:
+      - LM03
+      - LM08
+      - LM18
+      - LM23
+    assignments:
+      - robot: robot1
+        start: LM01
+        goal: LM05
+      - robot: robot2
+        start: LM06
+        goal: LM10
+      - robot: robot3
+        start: LM11
+        goal: LM15
+      - robot: robot4
+        start: LM16
+        goal: LM20
+      - robot: robot5
+        start: LM05
+        goal: LM01
+      - robot: robot6
+        start: LM10
+        goal: LM06
+      - robot: robot7
+        start: LM15
+        goal: LM11
+      - robot: robot8
+        start: LM20
+        goal: LM16

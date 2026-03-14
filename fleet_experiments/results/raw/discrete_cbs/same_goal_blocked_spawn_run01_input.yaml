@@ -1,0 +1,20 @@
+agents:
+- name: robot1
+  start:
+  - 1
+  - 1
+  goal:
+  - 0
+  - 2
+- name: robot2
+  start:
+  - 0
+  - 1
+  goal:
+  - 0
+  - 2
+map:
+  dimensions:
+  - 3
+  - 3
+  obstacles: []
