@@ -1,21 +1,39 @@
 from __future__ import annotations
 
 import argparse
-import json
 import time
 from typing import List, Optional
 from uuid import uuid4
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+
+try:
+    from fleet_msgs.msg import FleetTask, FleetTaskStatus
+except ImportError:  # pragma: no cover - fallback for source-only unit tests before interface build
+    class FleetTask:  # type: ignore[override]
+        def __init__(self):
+            self.robot = ""
+            self.command = ""
+            self.goal = ""
+            self.task_id = ""
+            self.reason = ""
+
+    class FleetTaskStatus:  # type: ignore[override]
+        def __init__(self):
+            self.robot = ""
+            self.goal = ""
+            self.state = ""
+            self.reason = ""
+            self.requeue_attempts = 0
+            self.task_id = ""
 
 
 class TaskManagerNode(Node):
     def __init__(self, robot: str, wait_status: bool = False):
         super().__init__("task_manager")
         self.robot = robot
-        self.pub = self.create_publisher(String, "/fleet/tasks", 10)
+        self.pub = self.create_publisher(FleetTask, "/fleet/tasks", 10)
         self.wait_status = wait_status
 
         self._waiting_goal: Optional[str] = None
@@ -25,7 +43,7 @@ class TaskManagerNode(Node):
 
         if self.wait_status:
             self.status_sub = self.create_subscription(
-                String,
+                FleetTaskStatus,
                 "/fleet/task_status",
                 self._status_callback,
                 10,
@@ -51,34 +69,25 @@ class TaskManagerNode(Node):
             self._waiting_done = False
             self._waiting_state = None
 
-        msg = String()
-        payload = {
-            "robot": self.robot,
-            "command": command,
-        }
-        if goal is not None:
-            payload["goal"] = goal
-        if task_id is not None:
-            payload["task_id"] = task_id
-        if reason:
-            payload["reason"] = reason
-        msg.data = json.dumps(payload)
+        msg = FleetTask()
+        msg.robot = self.robot
+        msg.command = command
+        msg.goal = goal or ""
+        msg.task_id = task_id or ""
+        msg.reason = reason or ""
 
-        self.get_logger().info(f"Publishing task: {msg.data}")
+        self.get_logger().info(
+            "Publishing task: "
+            f"robot={msg.robot}, command={msg.command}, goal={msg.goal}, "
+            f"task_id={msg.task_id}, reason={msg.reason}"
+        )
         self.pub.publish(msg)
 
-    def _status_callback(self, msg: String) -> None:
-        try:
-            data = json.loads(msg.data)
-        except Exception:
-            return
-
-        robot = data.get("robot")
-        goal = data.get("goal")
-        state = data.get("state")
-        task_id = data.get("task_id")
-        if not isinstance(robot, str) or not isinstance(goal, str) or not isinstance(state, str):
-            return
+    def _status_callback(self, msg: FleetTaskStatus) -> None:
+        robot = msg.robot
+        goal = msg.goal
+        state = msg.state
+        task_id = msg.task_id
 
         if robot != self.robot:
             return

@@ -14,12 +14,17 @@ fleet_manager_node:
 
     # Runtime robustness settings.
     waypoint_timeout_sec: 45.0
+    waypoint_min_spacing_m: 0.30
     offpath_max_cell_distance: 2
     offpath_grace_ticks: 5
     max_requeue_attempts: 5
     cancel_timeout_sec: 2.0
     pending_blocked_timeout_sec: 10.0
     goal_occupied_radius_m: 0.35
+    occupied_landmark_radius_m: 0.9
+    occupied_landmark_block_radius_m: 0.9
+    occupied_landmark_block_radius_cells: 1
+    landmark_capture_radius_m: 0.35
 
     # CBS search limits.
     cbs_low_level_max_time: 256

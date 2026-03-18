@@ -1,0 +1,10 @@
+string robot
+string command
+string goal
+string task_id
+string reason
+---
+bool accepted
+int32 queue_position
+string task_id
+string message

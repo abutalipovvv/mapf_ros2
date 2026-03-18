@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import math
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
@@ -9,16 +8,19 @@ import rclpy
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
-from std_msgs.msg import String
+from fleet_msgs.msg import FleetTask, FleetTaskStatus, FleetVisualization, RobotVisualization, Point2D
 
 from scripts.planning.cbs_planner import CBSPlanner, RobotRequest
-from scripts.planning.path_utils import compress_grid_path
 from scripts.planning.search_utils import find_nearest_free_cell
 from scripts.runtime.map_provider import MapProvider
 from scripts.runtime.robot_client import RobotClient
 from scripts.utils.geometry_utils import yaw_to_quaternion
-from scripts.utils.grid_utils import grid_to_world, world_to_grid
+from scripts.utils.grid_utils import world_to_grid
 from scripts.utils.landmark_loader import load_landmarks
+from scripts.execution_state import ExecutionState
+from scripts.landmark_router import LandmarkRouter
+from scripts.task_state import TaskStateStore
+from scripts.visualization_snapshot import VisualizationSnapshotBuilder
 
 GridCell = Tuple[int, int]
 WorldPoint = Tuple[float, float]
@@ -47,12 +49,17 @@ class FleetManagerNode(Node):
         self.declare_parameter("nominal_robot_speed_mps", 0.30)
         self.declare_parameter("reservation_hold_sec", 12.0)
         self.declare_parameter("waypoint_timeout_sec", 45.0)
+        self.declare_parameter("waypoint_min_spacing_m", 0.30)
         self.declare_parameter("offpath_max_cell_distance", 2)
         self.declare_parameter("offpath_grace_ticks", 5)
         self.declare_parameter("max_requeue_attempts", 5)
         self.declare_parameter("cancel_timeout_sec", 2.0)
         self.declare_parameter("pending_blocked_timeout_sec", 120.0)
         self.declare_parameter("goal_occupied_radius_m", 0.35)
+        self.declare_parameter("occupied_landmark_radius_m", 0.9)
+        self.declare_parameter("occupied_landmark_block_radius_m", 0.9)
+        self.declare_parameter("occupied_landmark_block_radius_cells", 1)
+        self.declare_parameter("landmark_capture_radius_m", 0.35)
 
         self.declare_parameter("cbs_low_level_max_time", 256)
         self.declare_parameter("cbs_max_high_level_nodes", 2000)
@@ -73,6 +80,10 @@ class FleetManagerNode(Node):
         self.waypoint_timeout_sec = max(
             1.0,
             float(self.get_parameter("waypoint_timeout_sec").value),
+        )
+        self.waypoint_min_spacing_m = max(
+            0.05,
+            float(self.get_parameter("waypoint_min_spacing_m").value),
         )
         self.offpath_max_cell_distance = max(
             1,
@@ -97,6 +108,22 @@ class FleetManagerNode(Node):
         self.goal_occupied_radius_m = max(
             0.0,
             float(self.get_parameter("goal_occupied_radius_m").value),
+        )
+        self.occupied_landmark_radius_m = max(
+            0.0,
+            float(self.get_parameter("occupied_landmark_radius_m").value),
+        )
+        self.occupied_landmark_block_radius_m = max(
+            0.0,
+            float(self.get_parameter("occupied_landmark_block_radius_m").value),
+        )
+        self.occupied_landmark_block_radius_cells = max(
+            0,
+            int(self.get_parameter("occupied_landmark_block_radius_cells").value),
+        )
+        self.landmark_capture_radius_m = max(
+            0.05,
+            float(self.get_parameter("landmark_capture_radius_m").value),
         )
         self.cbs_low_level_max_time = max(
             1,
@@ -123,34 +150,29 @@ class FleetManagerNode(Node):
         )
         self.cbs_planner = CBSPlanner(self.map_provider.is_free)
 
-        self.pending_tasks: Dict[str, List[TaskRef]] = {
-            name: [] for name in self.robot_names
-        }
-        self.active_goal_for_robot: Dict[str, str] = {}
-        self.active_task_id_for_robot: Dict[str, Optional[str]] = {}
-        self.task_requeue_attempts: Dict[str, int] = {}
-        self.cancel_reason_for_robot: Dict[str, str] = {}
-        self.pending_blocked_since_sec: Dict[str, float] = {}
-        self.pending_blocked_reason: Dict[str, str] = {}
+        self.task_state = TaskStateStore(self.robot_names)
+        self.pending_tasks = self.task_state.pending_tasks
+        self.active_goal_for_robot = self.task_state.active_goal_for_robot
+        self.active_task_id_for_robot = self.task_state.active_task_id_for_robot
+        self.task_requeue_attempts = self.task_state.task_requeue_attempts
+        self.cancel_reason_for_robot = self.task_state.cancel_reason_for_robot
+        self.pending_blocked_since_sec = self.task_state.pending_blocked_since_sec
+        self.pending_blocked_reason = self.task_state.pending_blocked_reason
 
-        self.robot_waypoint_queue: Dict[str, List[WorldPoint]] = {
-            name: [] for name in self.robot_names
-        }
+        self.execution_state = ExecutionState(self.robot_names)
+        self.robot_waypoint_queue = self.execution_state.robot_waypoint_queue
+        self.robot_waypoint_landmark_queue = self.execution_state.robot_waypoint_landmark_queue
+        self.robot_planned_landmark_path = self.execution_state.robot_planned_landmark_path
         self.robot_last_status: Dict[str, str] = {
             name: "unknown" for name in self.robot_names
         }
-        self.robot_current_nav_goal_world: Dict[str, Optional[WorldPoint]] = {
+        self.robot_current_landmark: Dict[str, Optional[str]] = {
             name: None for name in self.robot_names
         }
-        self.robot_current_nav_goal_sent_time_sec: Dict[str, Optional[float]] = {
-            name: None for name in self.robot_names
-        }
-        self.robot_active_grid_path: Dict[str, List[GridCell]] = {
-            name: [] for name in self.robot_names
-        }
-        self.robot_offpath_ticks: Dict[str, int] = {
-            name: 0 for name in self.robot_names
-        }
+        self.robot_current_nav_goal_world = self.execution_state.robot_current_nav_goal_world
+        self.robot_current_nav_goal_sent_time_sec = self.execution_state.robot_current_nav_goal_sent_time_sec
+        self.robot_active_grid_path = self.execution_state.robot_active_grid_path
+        self.robot_offpath_ticks = self.execution_state.robot_offpath_ticks
 
         self._task_seq = 0
 
@@ -162,20 +184,25 @@ class FleetManagerNode(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to load landmarks: {e}")
             self.landmarks = {}
+        self.landmark_router = LandmarkRouter(
+            self.landmarks,
+            default_capture_radius_m=self.landmark_capture_radius_m,
+        )
+        self.visualization_builder = VisualizationSnapshotBuilder(self.landmarks)
 
         self.task_sub = self.create_subscription(
-            String,
+            FleetTask,
             "/fleet/tasks",
             self._task_callback,
             10,
         )
         self.task_status_pub = self.create_publisher(
-            String,
+            FleetTaskStatus,
             "/fleet/task_status",
             10,
         )
         self.visualization_pub = self.create_publisher(
-            String,
+            FleetVisualization,
             "/fleet/visualization",
             10,
         )
@@ -268,67 +295,155 @@ class FleetManagerNode(Node):
         requeue_attempts: Optional[int] = None,
         task_id: Optional[str] = None,
     ) -> None:
-        payload = {
-            "robot": robot_name,
-            "goal": goal_name,
-            "state": state,
-            "reason": reason,
-            "requeue_attempts": (
-                self.task_requeue_attempts.get(robot_name, 0)
-                if requeue_attempts is None
-                else requeue_attempts
-            ),
-        }
-        if task_id is not None:
-            payload["task_id"] = task_id
-        msg = String()
-        msg.data = json.dumps(payload)
+        msg = FleetTaskStatus()
+        msg.robot = robot_name
+        msg.goal = goal_name
+        msg.state = state
+        msg.reason = reason
+        msg.requeue_attempts = (
+            self.task_requeue_attempts.get(robot_name, 0)
+            if requeue_attempts is None
+            else requeue_attempts
+        )
+        msg.task_id = task_id or ""
         self.task_status_pub.publish(msg)
-        self.get_logger().info(f"Task status: {msg.data}")
+        self.get_logger().info(
+            "Task status: "
+            f"robot={msg.robot}, goal={msg.goal}, state={msg.state}, "
+            f"reason={msg.reason}, requeue_attempts={msg.requeue_attempts}, task_id={msg.task_id}"
+        )
 
     def _pending_task_key(self, robot_name: str, goal_name: str, task_id: Optional[str]) -> str:
-        return task_id or f"{robot_name}:{goal_name}"
+        return self._get_task_state().pending_task_key(robot_name, goal_name, task_id)
 
-    @staticmethod
-    def _point_to_payload(point: WorldPoint) -> Dict[str, float]:
-        return {"x": float(point[0]), "y": float(point[1])}
+    def _get_landmark_router(self) -> LandmarkRouter:
+        router = getattr(self, "landmark_router", None)
+        if router is None or router.landmarks is not self.landmarks:
+            capture_radius_m = getattr(self, "landmark_capture_radius_m", 0.35)
+            router = LandmarkRouter(
+                self.landmarks,
+                default_capture_radius_m=capture_radius_m,
+            )
+            self.landmark_router = router
+        return router
+
+    def _get_visualization_builder(self) -> VisualizationSnapshotBuilder:
+        builder = getattr(self, "visualization_builder", None)
+        if builder is None or builder.landmarks is not self.landmarks:
+            builder = VisualizationSnapshotBuilder(self.landmarks)
+            self.visualization_builder = builder
+        return builder
+
+    def _get_task_state(self) -> TaskStateStore:
+        state = getattr(self, "task_state", None)
+        if state is None:
+            state = TaskStateStore(getattr(self, "robot_names", []))
+            state.pending_tasks = getattr(self, "pending_tasks", state.pending_tasks)
+            state.active_goal_for_robot = getattr(self, "active_goal_for_robot", state.active_goal_for_robot)
+            state.active_task_id_for_robot = getattr(
+                self,
+                "active_task_id_for_robot",
+                state.active_task_id_for_robot,
+            )
+            state.task_requeue_attempts = getattr(
+                self,
+                "task_requeue_attempts",
+                state.task_requeue_attempts,
+            )
+            state.cancel_reason_for_robot = getattr(
+                self,
+                "cancel_reason_for_robot",
+                state.cancel_reason_for_robot,
+            )
+            state.pending_blocked_since_sec = getattr(
+                self,
+                "pending_blocked_since_sec",
+                state.pending_blocked_since_sec,
+            )
+            state.pending_blocked_reason = getattr(
+                self,
+                "pending_blocked_reason",
+                state.pending_blocked_reason,
+            )
+            self.task_state = state
+        return state
+
+    def _get_execution_state(self) -> ExecutionState:
+        state = getattr(self, "execution_state", None)
+        if state is None:
+            state = ExecutionState(getattr(self, "robot_names", []))
+            state.robot_waypoint_queue = getattr(self, "robot_waypoint_queue", state.robot_waypoint_queue)
+            state.robot_waypoint_landmark_queue = getattr(
+                self,
+                "robot_waypoint_landmark_queue",
+                state.robot_waypoint_landmark_queue,
+            )
+            state.robot_planned_landmark_path = getattr(
+                self,
+                "robot_planned_landmark_path",
+                state.robot_planned_landmark_path,
+            )
+            state.robot_current_nav_goal_world = getattr(
+                self,
+                "robot_current_nav_goal_world",
+                state.robot_current_nav_goal_world,
+            )
+            state.robot_current_nav_goal_sent_time_sec = getattr(
+                self,
+                "robot_current_nav_goal_sent_time_sec",
+                state.robot_current_nav_goal_sent_time_sec,
+            )
+            state.robot_active_grid_path = getattr(
+                self,
+                "robot_active_grid_path",
+                state.robot_active_grid_path,
+            )
+            state.robot_offpath_ticks = getattr(self, "robot_offpath_ticks", state.robot_offpath_ticks)
+            self.execution_state = state
+        return state
 
     def _publish_visualization_snapshot(self) -> None:
-        map_info = self.map_provider.get_grid_info()
-        robots_payload: Dict[str, Dict[str, object]] = {}
+        robots_payload = self._get_visualization_builder().build(
+            robot_names=self.robot_names,
+            robots=self.robots,
+            active_goal_for_robot=self.active_goal_for_robot,
+            current_nav_goals=self.robot_current_nav_goal_world,
+            waypoint_landmark_queues=self.robot_waypoint_landmark_queue,
+            planned_landmark_paths=self.robot_planned_landmark_path,
+        )
 
+        msg = FleetVisualization()
         for robot_name in self.robot_names:
-            pose = self.robots[robot_name].get_pose()
-            current_nav_goal = self.robot_current_nav_goal_world.get(robot_name)
-            local_path: List[WorldPoint] = []
-            if current_nav_goal is not None:
-                local_path.append(current_nav_goal)
-            local_path.extend(self.robot_waypoint_queue.get(robot_name, []))
-
-            global_path: List[WorldPoint] = []
-            if map_info is not None:
-                for cell in compress_grid_path(self.robot_active_grid_path.get(robot_name, [])):
-                    global_path.append(grid_to_world(cell[0], cell[1], map_info))
-
-            robots_payload[robot_name] = {
-                "status": self.robots[robot_name].get_status(),
-                "goal": self.active_goal_for_robot.get(robot_name),
-                "pose": (
-                    None
-                    if pose is None
-                    else {"x": float(pose.x), "y": float(pose.y)}
-                ),
-                "current_nav_goal": (
-                    None
-                    if current_nav_goal is None
-                    else self._point_to_payload(current_nav_goal)
-                ),
-                "local_path": [self._point_to_payload(point) for point in local_path],
-                "global_path": [self._point_to_payload(point) for point in global_path],
-            }
-
-        msg = String()
-        msg.data = json.dumps({"robots": robots_payload})
+            robot_data = robots_payload.get(robot_name, {})
+            robot_msg = RobotVisualization()
+            robot_msg.robot = robot_name
+            robot_msg.status = str(robot_data.get("status", ""))
+            robot_msg.goal = str(robot_data.get("goal", ""))
+            pose = robot_data.get("pose")
+            if isinstance(pose, dict):
+                robot_msg.has_pose = True
+                robot_msg.pose = Point2D()
+                robot_msg.pose.x = float(pose.get("x", 0.0))
+                robot_msg.pose.y = float(pose.get("y", 0.0))
+            current_nav_goal = robot_data.get("current_nav_goal")
+            if isinstance(current_nav_goal, dict):
+                robot_msg.has_current_nav_goal = True
+                robot_msg.current_nav_goal = Point2D()
+                robot_msg.current_nav_goal.x = float(current_nav_goal.get("x", 0.0))
+                robot_msg.current_nav_goal.y = float(current_nav_goal.get("y", 0.0))
+            for path_name in ("local_path", "global_path"):
+                point_payloads = robot_data.get(path_name, [])
+                msg_points = []
+                if isinstance(point_payloads, list):
+                    for point in point_payloads:
+                        if not isinstance(point, dict):
+                            continue
+                        point_msg = Point2D()
+                        point_msg.x = float(point.get("x", 0.0))
+                        point_msg.y = float(point.get("y", 0.0))
+                        msg_points.append(point_msg)
+                setattr(robot_msg, path_name, msg_points)
+            msg.robots.append(robot_msg)
         self.visualization_pub.publish(msg)
 
     def _enqueue_pending_task(
@@ -338,27 +453,13 @@ class FleetManagerNode(Node):
         task_id: Optional[str],
         front: bool = False,
     ) -> int:
-        queue = self.pending_tasks.setdefault(robot_name, [])
-        item: TaskRef = (goal_name, task_id)
-        if front:
-            queue.insert(0, item)
-        else:
-            queue.append(item)
-        return len(queue)
+        return self._get_task_state().enqueue_pending_task(robot_name, goal_name, task_id, front=front)
 
     def _peek_pending_task(self, robot_name: str) -> Optional[TaskRef]:
-        queue = self.pending_tasks.get(robot_name, [])
-        return queue[0] if queue else None
+        return self._get_task_state().peek_pending_task(robot_name)
 
     def _pop_pending_task(self, robot_name: str) -> Optional[TaskRef]:
-        queue = self.pending_tasks.get(robot_name, [])
-        if not queue:
-            return None
-        item = queue.pop(0)
-        key = self._pending_task_key(robot_name, item[0], item[1])
-        self.pending_blocked_since_sec.pop(key, None)
-        self.pending_blocked_reason.pop(key, None)
-        return item
+        return self._get_task_state().pop_pending_task(robot_name)
 
     def _mark_pending_blocked(
         self,
@@ -367,19 +468,14 @@ class FleetManagerNode(Node):
         task_id: Optional[str],
         reason: str,
     ) -> None:
-        key = self._pending_task_key(robot_name, goal_name, task_id)
-        if key not in self.pending_blocked_since_sec:
-            self.pending_blocked_since_sec[key] = self._now_sec()
-        last_reason = self.pending_blocked_reason.get(key)
-        if last_reason != reason:
-            self.pending_blocked_reason[key] = reason
-            self._publish_task_status(
-                robot_name=robot_name,
-                goal_name=goal_name,
-                state="blocked",
-                reason=reason,
-                task_id=task_id,
-            )
+        self._get_task_state().mark_pending_blocked(
+            robot_name=robot_name,
+            goal_name=goal_name,
+            task_id=task_id,
+            reason=reason,
+            now_sec=self._now_sec(),
+            publish_task_status=self._publish_task_status,
+        )
 
     def _clear_pending_blocked(
         self,
@@ -387,77 +483,42 @@ class FleetManagerNode(Node):
         goal_name: str,
         task_id: Optional[str],
     ) -> None:
-        key = self._pending_task_key(robot_name, goal_name, task_id)
-        self.pending_blocked_since_sec.pop(key, None)
-        self.pending_blocked_reason.pop(key, None)
+        self._get_task_state().clear_pending_blocked(robot_name, goal_name, task_id)
 
     def _expire_blocked_pending_tasks(self) -> None:
-        if self.pending_blocked_timeout_sec <= 0.0:
-            return
-
-        now_sec = self._now_sec()
-        for robot_name in self.robot_names:
-            pending_task = self._peek_pending_task(robot_name)
-            if pending_task is None:
-                continue
-            goal_name, task_id = pending_task
-            key = self._pending_task_key(robot_name, goal_name, task_id)
-            blocked_since = self.pending_blocked_since_sec.get(key)
-            if blocked_since is None:
-                continue
-            elapsed = now_sec - blocked_since
-            if elapsed < self.pending_blocked_timeout_sec:
-                continue
-
-            popped = self._pop_pending_task(robot_name)
-            if popped is None:
-                continue
-
-            self._publish_task_status(
-                robot_name=robot_name,
-                goal_name=goal_name,
-                state="failed",
-                reason=f"blocked_timeout_{elapsed:.1f}s",
-                task_id=task_id,
-            )
+        self._get_task_state().expire_blocked_pending_tasks(
+            robot_names=self.robot_names,
+            now_sec=self._now_sec(),
+            pending_blocked_timeout_sec=self.pending_blocked_timeout_sec,
+            publish_task_status=self._publish_task_status,
+        )
 
     def _has_pending_tasks(self) -> bool:
-        return any(self.pending_tasks.get(name, []) for name in self.robot_names)
+        return self._get_task_state().has_pending_tasks(self.robot_names)
 
     def _active_goal_owner(self, goal_name: str, except_robot: str) -> Optional[str]:
-        for robot_name, active_goal in self.active_goal_for_robot.items():
-            if robot_name == except_robot:
-                continue
-            if active_goal == goal_name:
-                return robot_name
-        return None
+        return self._get_task_state().active_goal_owner(goal_name, except_robot)
 
     def _is_robot_busy(self, status: str) -> bool:
         return status in {"goal_sent", "executing", "canceling"}
 
-    def _task_callback(self, msg: String) -> None:
-        try:
-            data = json.loads(msg.data)
-        except Exception as e:
-            self.get_logger().error(f"Invalid task message: {msg.data}, error={e}")
-            return
-
-        robot = data.get("robot")
+    def _task_callback(self, msg: FleetTask) -> None:
+        robot = msg.robot
         if not isinstance(robot, str):
-            self.get_logger().error(f"Invalid robot in task message: {msg.data}")
+            self.get_logger().error("Invalid robot in task message")
             return
         robot = robot.strip().strip("/")
         if robot not in self.robots:
             self.get_logger().error(f"Unknown robot: {robot}")
             return
 
-        command_raw = data.get("command", "task")
+        command_raw = msg.command or "task"
         if not isinstance(command_raw, str):
-            self.get_logger().error(f"Invalid command in task message: {msg.data}")
+            self.get_logger().error("Invalid command in task message")
             return
         command = command_raw.strip().lower() or "task"
 
-        task_id = data.get("task_id")
+        task_id = msg.task_id
         if task_id is not None and not isinstance(task_id, str):
             self.get_logger().error(f"Invalid task_id type: {type(task_id).__name__}")
             return
@@ -465,17 +526,16 @@ class FleetManagerNode(Node):
             task_id = task_id.strip() or None
 
         if command == "cancel":
-            reason = data.get("reason")
-            reason_text = reason if isinstance(reason, str) and reason else "user_cancel"
+            reason_text = msg.reason if isinstance(msg.reason, str) and msg.reason else "user_cancel"
             if self._request_cancel_active_task(robot, reason_text):
                 self.get_logger().info(f"[{robot}] cancel requested, reason={reason_text}")
             else:
                 self.get_logger().warn(f"[{robot}] cancel requested but no active task")
             return
 
-        goal = data.get("goal")
+        goal = msg.goal
         if not isinstance(goal, str):
-            self.get_logger().error(f"Task message missing valid goal: {msg.data}")
+            self.get_logger().error("Task message missing valid goal")
             return
         if goal not in self.landmarks:
             self.get_logger().error(f"Unknown goal: {goal}")
@@ -529,12 +589,7 @@ class FleetManagerNode(Node):
         self.active_goal_for_robot.pop(robot_name, None)
         self.active_task_id_for_robot.pop(robot_name, None)
         self.cancel_reason_for_robot.pop(robot_name, None)
-
-        self.robot_waypoint_queue[robot_name] = []
-        self.robot_current_nav_goal_world[robot_name] = None
-        self.robot_current_nav_goal_sent_time_sec[robot_name] = None
-        self.robot_active_grid_path[robot_name] = []
-        self.robot_offpath_ticks[robot_name] = 0
+        self._get_execution_state().clear_robot(robot_name)
 
     def _requeue_active_goal(self, robot_name: str, reason: str) -> None:
         goal_name = self.active_goal_for_robot.get(robot_name)
@@ -621,6 +676,10 @@ class FleetManagerNode(Node):
         if robot_cell is None:
             self.robot_offpath_ticks[robot_name] = 0
             return
+        active_goal = self.active_goal_for_robot.get(robot_name)
+        if active_goal is not None and self.robot_current_landmark.get(robot_name) == active_goal:
+            self.robot_offpath_ticks[robot_name] = 0
+            return
 
         path = self.robot_active_grid_path.get(robot_name, [])
         if not path:
@@ -648,6 +707,8 @@ class FleetManagerNode(Node):
             return False
 
         next_x, next_y = queue[0]
+        landmark_queue = self.robot_waypoint_landmark_queue.get(robot_name, [])
+        next_landmark = landmark_queue[0] if landmark_queue else None
         goal_name = self.active_goal_for_robot.get(robot_name)
         yaw = 0.0
         if goal_name is not None and goal_name in self.landmarks:
@@ -664,8 +725,15 @@ class FleetManagerNode(Node):
         )
         if ok:
             queue.pop(0)
+            if landmark_queue:
+                landmark_queue.pop(0)
             self.robot_current_nav_goal_world[robot_name] = (next_x, next_y)
             self.robot_current_nav_goal_sent_time_sec[robot_name] = self._now_sec()
+            self.get_logger().info(
+                f"[{robot_name}] nav2_next_lm={next_landmark} "
+                f"world=({next_x:.3f}, {next_y:.3f}) "
+                f"remaining_lm_queue={landmark_queue}"
+            )
             goal_name = self.active_goal_for_robot.get(robot_name)
             if goal_name is not None:
                 self._publish_task_status(
@@ -814,6 +882,59 @@ class FleetManagerNode(Node):
             occupied[robot_name] = cell
         return occupied
 
+    def _inflate_blocked_cells(self, center: GridCell, radius_cells: int) -> List[GridCell]:
+        if radius_cells <= 0:
+            return [center]
+
+        cx, cy = center
+        cells: List[GridCell] = []
+        for dx in range(-radius_cells, radius_cells + 1):
+            for dy in range(-radius_cells, radius_cells + 1):
+                if abs(dx) + abs(dy) > radius_cells:
+                    continue
+                cells.append((cx + dx, cy + dy))
+        return cells
+
+    def _inflate_blocked_cells_meters(
+        self,
+        center: GridCell,
+        map_info,
+        radius_m: float,
+        fallback_radius_cells: int = 0,
+    ) -> List[GridCell]:
+        if radius_m > 0.0 and map_info.resolution > 0.0:
+            radius_cells = max(0, int(math.ceil(radius_m / map_info.resolution)))
+        else:
+            radius_cells = max(0, int(fallback_radius_cells))
+        return self._inflate_blocked_cells(center, radius_cells)
+
+    def _format_blocked_cells_for_log(self, blocked_cells: List[GridCell], map_info) -> str:
+        return self._get_landmark_router().format_blocked_cells_for_log(blocked_cells, map_info)
+
+    def _sparsify_world_waypoints(
+        self,
+        waypoints: List[WorldPoint],
+        min_spacing_m: float,
+    ) -> List[WorldPoint]:
+        if len(waypoints) <= 2:
+            return waypoints[:]
+
+        kept: List[WorldPoint] = [waypoints[0]]
+        last_x, last_y = waypoints[0]
+        threshold_sq = max(min_spacing_m, 0.0) ** 2
+
+        for wx, wy in waypoints[1:-1]:
+            dx = wx - last_x
+            dy = wy - last_y
+            if dx * dx + dy * dy >= threshold_sq:
+                kept.append((wx, wy))
+                last_x, last_y = wx, wy
+
+        if kept[-1] != waypoints[-1]:
+            kept.append(waypoints[-1])
+
+        return kept
+
     def _find_robot_occupying_goal(
         self,
         robot_name: str,
@@ -854,7 +975,7 @@ class FleetManagerNode(Node):
             return []
 
         active_statuses = {"goal_sent", "executing", "canceling"}
-        blocked: List[GridCell] = []
+        blocked: Set[GridCell] = set()
         for robot_name, robot in self.robots.items():
             if robot_name in excluded_robot_names:
                 continue
@@ -867,14 +988,45 @@ class FleetManagerNode(Node):
                 continue
             cell = world_to_grid(pose.x, pose.y, map_info)
             if cell is not None:
-                blocked.append(cell)
-        return blocked
+                blocked.update(
+                    self._inflate_blocked_cells_meters(
+                        cell,
+                        map_info,
+                        self.occupied_landmark_block_radius_m,
+                        self.occupied_landmark_block_radius_cells,
+                    )
+                )
+
+            lm_name = self._get_landmark_router().nearest_landmark_name(
+                pose.x,
+                pose.y,
+                max_distance=self.occupied_landmark_radius_m,
+            )
+            if lm_name is None:
+                continue
+
+            lm = self.landmarks.get(lm_name)
+            if lm is None:
+                continue
+
+            lm_cell = world_to_grid(float(lm["x"]), float(lm["y"]), map_info)
+            if lm_cell is not None:
+                blocked.update(
+                    self._inflate_blocked_cells_meters(
+                        lm_cell,
+                        map_info,
+                        self.occupied_landmark_block_radius_m,
+                        self.occupied_landmark_block_radius_cells,
+                    )
+                )
+        return sorted(blocked)
 
     def _build_robot_requests(self) -> Tuple[List[RobotRequest], Dict[str, TaskRef]]:
         map_info = self.map_provider.get_grid_info()
         if map_info is None:
             return [], {}
 
+        robot_current_landmark = getattr(self, "robot_current_landmark", {})
         requests: List[RobotRequest] = []
         goal_info_by_robot: Dict[str, TaskRef] = {}
         used_goal_cells: Dict[GridCell, str] = {}
@@ -885,6 +1037,19 @@ class FleetManagerNode(Node):
             if pending_task is None:
                 continue
             goal_name, task_id = pending_task
+            if robot_current_landmark.get(robot_name) == goal_name:
+                popped = self._pop_pending_task(robot_name)
+                if popped is not None:
+                    self._clear_pending_blocked(robot_name, goal_name, task_id)
+                    self.task_requeue_attempts.pop(robot_name, None)
+                    self._publish_task_status(
+                        robot_name=robot_name,
+                        goal_name=goal_name,
+                        state="completed",
+                        reason="already_at_goal_landmark",
+                        task_id=task_id,
+                    )
+                continue
 
             active_owner = self._active_goal_owner(goal_name, except_robot=robot_name)
             if active_owner is not None:
@@ -996,29 +1161,83 @@ class FleetManagerNode(Node):
             if robot_pose is None:
                 continue
 
-            compressed_path = compress_grid_path(plan.path)
+            landmark_sequence = self._get_landmark_router().landmark_sequence_from_grid_path(
+                plan.path,
+                map_info,
+                capture_radius_m=self.landmark_capture_radius_m,
+            )
+            goal_name, task_id = goal_info_by_robot[robot_name]
+            if not landmark_sequence or landmark_sequence[-1] != goal_name:
+                landmark_sequence.append(goal_name)
+
+            start_landmark = self.robot_current_landmark.get(robot_name)
+            occupied_landmarks = {
+                other_lm
+                for other_robot, other_lm in self.robot_current_landmark.items()
+                if other_robot != robot_name and other_lm is not None
+            }
+            if start_landmark is not None:
+                graph_landmark_sequence = self._get_landmark_router().plan_route(
+                    start_landmark,
+                    goal_name,
+                    blocked_landmarks=occupied_landmarks,
+                )
+                if graph_landmark_sequence is not None:
+                    landmark_sequence = graph_landmark_sequence
+
+            if start_landmark is not None and landmark_sequence and landmark_sequence[0] == start_landmark:
+                landmark_sequence = landmark_sequence[1:]
+
+            conflicting_landmarks = [
+                lm_name for lm_name in landmark_sequence[:-1]
+                if lm_name in occupied_landmarks
+            ]
+            if conflicting_landmarks:
+                self.get_logger().warn(
+                    f"[{robot_name}] rejecting plan through occupied landmarks: {conflicting_landmarks}"
+                )
+                self._publish_task_status(
+                    robot_name=robot_name,
+                    goal_name=goal_name,
+                    state="planning_failed",
+                    reason=f"occupied_landmark_in_path:{','.join(conflicting_landmarks)}",
+                    task_id=task_id,
+                )
+                continue
+
             world_waypoints: List[WorldPoint] = []
-            for i, j in compressed_path:
-                wx, wy = grid_to_world(i, j, map_info)
-                world_waypoints.append((wx, wy))
+            waypoint_landmarks: List[str] = []
+            for lm_name in landmark_sequence:
+                lm = self.landmarks.get(lm_name)
+                if lm is None:
+                    continue
+                world_waypoints.append((float(lm["x"]), float(lm["y"])))
+                waypoint_landmarks.append(lm_name)
             if not world_waypoints:
                 continue
 
             filtered_waypoints: List[WorldPoint] = []
-            for wx, wy in world_waypoints:
+            filtered_landmarks: List[str] = []
+            for (wx, wy), lm_name in zip(world_waypoints, waypoint_landmarks):
                 dist = ((wx - robot_pose.x) ** 2 + (wy - robot_pose.y) ** 2) ** 0.5
                 if dist > 0.10:
                     filtered_waypoints.append((wx, wy))
+                    filtered_landmarks.append(lm_name)
             if not filtered_waypoints:
                 filtered_waypoints = [world_waypoints[-1]]
+                filtered_landmarks = [waypoint_landmarks[-1]]
 
-            goal_name, task_id = goal_info_by_robot[robot_name]
             self.active_goal_for_robot[robot_name] = goal_name
             self.active_task_id_for_robot[robot_name] = task_id
             self.task_requeue_attempts.setdefault(robot_name, 0)
             self.robot_offpath_ticks[robot_name] = 0
             self.robot_active_grid_path[robot_name] = plan.path[:]
             self.robot_waypoint_queue[robot_name] = filtered_waypoints
+            self.robot_waypoint_landmark_queue[robot_name] = filtered_landmarks[:]
+            self.robot_planned_landmark_path[robot_name] = landmark_sequence[:]
+            self.get_logger().info(
+                f"[{robot_name}] cbs_lm_plan={landmark_sequence} exec_lm_queue={filtered_landmarks}"
+            )
             self._publish_task_status(
                 robot_name=robot_name,
                 goal_name=goal_name,
@@ -1047,6 +1266,9 @@ class FleetManagerNode(Node):
     def _try_plan_pending_tasks_with_cbs(self) -> None:
         if not self._has_pending_tasks():
             return
+        map_info = self.map_provider.get_grid_info()
+        if map_info is None:
+            return
 
         robot_requests, goal_info_by_robot = self._build_robot_requests()
         if not robot_requests:
@@ -1065,6 +1287,17 @@ class FleetManagerNode(Node):
         blocked_cells = self._collect_static_blocked_cells(excluded_robot_names=ready_names)
         reserved_vertices, reserved_edges = self._collect_time_reservations_for_active_robots(
             excluded_robot_names=ready_names
+        )
+        occupied_landmarks = {
+            robot_name: lm_name
+            for robot_name, lm_name in self.robot_current_landmark.items()
+            if lm_name is not None
+        }
+        self.get_logger().info(
+            "CBS planning snapshot: "
+            f"requests={[(req.robot_name, req.start, req.goal) for req in ready_requests]}, "
+            f"occupied_landmarks={occupied_landmarks}, "
+            f"blocked_cells={self._format_blocked_cells_for_log(blocked_cells, map_info)}"
         )
 
         self._apply_cbs_result(
@@ -1088,6 +1321,20 @@ class FleetManagerNode(Node):
             pose = robot.get_pose()
             status = robot.get_status()
             prev_status = self.robot_last_status.get(name, "unknown")
+            prev_landmark = self.robot_current_landmark.get(name)
+            if pose is not None:
+                current_landmark = self._get_landmark_router().nearest_landmark_name(
+                    pose.x,
+                    pose.y,
+                    max_distance=self.occupied_landmark_radius_m,
+                )
+                self.robot_current_landmark[name] = current_landmark
+                if current_landmark != prev_landmark:
+                    self.get_logger().info(
+                        f"[{name}] current_landmark: {prev_landmark} -> {current_landmark}"
+                    )
+            else:
+                self.robot_current_landmark[name] = None
 
             if pose is None:
                 self.robot_last_status[name] = status

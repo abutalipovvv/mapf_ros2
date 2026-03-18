@@ -1,0 +1,9 @@
+string robot
+string status
+string goal
+bool has_pose
+fleet_msgs/Point2D pose
+bool has_current_nav_goal
+fleet_msgs/Point2D current_nav_goal
+fleet_msgs/Point2D[] local_path
+fleet_msgs/Point2D[] global_path

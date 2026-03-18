@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -21,14 +20,29 @@ from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
-from std_msgs.msg import String
+
+try:
+    from fleet_msgs.msg import FleetTaskStatus, FleetVisualization
+except ImportError:  # pragma: no cover - fallback for source-only checks before interface build
+    class FleetTaskStatus:  # type: ignore[override]
+        def __init__(self):
+            self.robot = ""
+            self.goal = ""
+            self.state = ""
+            self.reason = ""
+            self.requeue_attempts = 0
+            self.task_id = ""
+
+    class FleetVisualization:  # type: ignore[override]
+        def __init__(self):
+            self.robots = []
 
 import yaml
 
 from scripts.utils.landmark_loader import load_landmarks
+from scripts.landmark_router import LandmarkRouter
 
 WorldPoint = Tuple[float, float]
-LandmarkEdge = Tuple[str, str]
 
 
 class GridMonitorNode(Node):
@@ -69,8 +83,9 @@ class GridMonitorNode(Node):
         share_dir = Path(get_package_share_directory("hybrid_fleet_manager"))
         landmarks_path = share_dir / "config" / "landmarks.yaml"
         self.landmarks = load_landmarks(str(landmarks_path))
-        self.landmark_edges = self._build_landmark_graph()
-        self.view_bounds = self._compute_view_bounds()
+        self.landmark_router = LandmarkRouter(self.landmarks)
+        self.landmark_edges = self.landmark_router.graph_edges
+        self.view_bounds = self.landmark_router.compute_view_bounds()
 
         amcl_qos = QoSProfile(
             history=HistoryPolicy.KEEP_LAST,
@@ -89,13 +104,13 @@ class GridMonitorNode(Node):
             self.pose_subs.append(sub)
 
         self.task_status_sub = self.create_subscription(
-            String,
+            FleetTaskStatus,
             "/fleet/task_status",
             self._task_status_callback,
             10,
         )
         self.visualization_sub = self.create_subscription(
-            String,
+            FleetVisualization,
             "/fleet/visualization",
             self._visualization_callback,
             10,
@@ -164,42 +179,6 @@ class GridMonitorNode(Node):
         except Exception:
             return fallback, fallback_positions
 
-    def _build_landmark_graph(self) -> List[LandmarkEdge]:
-        grouped_by_y: Dict[float, List[Tuple[float, str]]] = {}
-        grouped_by_x: Dict[float, List[Tuple[float, str]]] = {}
-
-        for name, lm in self.landmarks.items():
-            x = round(float(lm["x"]), 4)
-            y = round(float(lm["y"]), 4)
-            grouped_by_y.setdefault(y, []).append((x, name))
-            grouped_by_x.setdefault(x, []).append((y, name))
-
-        edge_set = set()
-        for items in grouped_by_y.values():
-            items.sort()
-            for idx in range(len(items) - 1):
-                edge_set.add(tuple(sorted((items[idx][1], items[idx + 1][1]))))
-
-        for items in grouped_by_x.values():
-            items.sort()
-            for idx in range(len(items) - 1):
-                edge_set.add(tuple(sorted((items[idx][1], items[idx + 1][1]))))
-
-        return sorted(edge_set)
-
-    def _compute_view_bounds(self) -> Tuple[float, float, float, float]:
-        points: List[WorldPoint] = []
-        for lm in self.landmarks.values():
-            points.append((float(lm["x"]), float(lm["y"])))
-
-        if not points:
-            return (-5.0, 5.0, -5.0, 5.0)
-
-        xs = [p[0] for p in points]
-        ys = [p[1] for p in points]
-        margin = 1.0
-        return (min(xs) - margin, max(xs) + margin, min(ys) - margin, max(ys) + margin)
-
     def _pose_callback(self, robot_name: str, msg: PoseWithCovarianceStamped) -> None:
         p = msg.pose.pose.position
         pose = (float(p.x), float(p.y))
@@ -210,15 +189,10 @@ class GridMonitorNode(Node):
         if len(history) > self.path_history_len:
             del history[:-self.path_history_len]
 
-    def _task_status_callback(self, msg: String) -> None:
-        try:
-            data = json.loads(msg.data)
-        except Exception:
-            return
-
-        robot = data.get("robot")
-        goal = data.get("goal")
-        state = data.get("state")
+    def _task_status_callback(self, msg: FleetTaskStatus) -> None:
+        robot = msg.robot
+        goal = msg.goal
+        state = msg.state
         if not isinstance(robot, str) or not isinstance(goal, str) or not isinstance(state, str):
             return
 
@@ -230,51 +204,33 @@ class GridMonitorNode(Node):
                 self.active_tasks.pop(robot, None)
 
     @staticmethod
-    def _payload_to_point(data: object) -> Optional[WorldPoint]:
-        if not isinstance(data, dict):
-            return None
-        x = data.get("x")
-        y = data.get("y")
-        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
-            return None
-        return float(x), float(y)
+    def _point_msg_to_tuple(point_msg) -> WorldPoint:
+        return (float(point_msg.x), float(point_msg.y))
 
-    def _visualization_callback(self, msg: String) -> None:
-        try:
-            data = json.loads(msg.data)
-        except Exception:
-            return
-
-        robots = data.get("robots")
-        if not isinstance(robots, dict):
-            return
-
-        for robot_name, robot_data in robots.items():
-            if robot_name not in self.robot_poses or not isinstance(robot_data, dict):
+    def _visualization_callback(self, msg: FleetVisualization) -> None:
+        for robot_data in msg.robots:
+            robot_name = robot_data.robot
+            if robot_name not in self.robot_poses:
                 continue
 
-            pose = self._payload_to_point(robot_data.get("pose"))
-            if pose is not None:
-                self.robot_poses[robot_name] = pose
+            if getattr(robot_data, "has_pose", False):
+                self.robot_poses[robot_name] = self._point_msg_to_tuple(robot_data.pose)
 
-            current_nav_goal = self._payload_to_point(robot_data.get("current_nav_goal"))
-            self.robot_current_nav_goals[robot_name] = current_nav_goal
+            if getattr(robot_data, "has_current_nav_goal", False):
+                self.robot_current_nav_goals[robot_name] = self._point_msg_to_tuple(
+                    robot_data.current_nav_goal
+                )
+            else:
+                self.robot_current_nav_goals[robot_name] = None
 
-            local_path_raw = robot_data.get("local_path")
-            if isinstance(local_path_raw, list):
-                self.robot_local_paths[robot_name] = [
-                    point
-                    for point in (self._payload_to_point(item) for item in local_path_raw)
-                    if point is not None
-                ]
-
-            global_path_raw = robot_data.get("global_path")
-            if isinstance(global_path_raw, list):
-                self.robot_global_paths[robot_name] = [
-                    point
-                    for point in (self._payload_to_point(item) for item in global_path_raw)
-                    if point is not None
-                ]
+            self.robot_local_paths[robot_name] = [
+                self._point_msg_to_tuple(point)
+                for point in robot_data.local_path
+            ]
+            self.robot_global_paths[robot_name] = [
+                self._point_msg_to_tuple(point)
+                for point in robot_data.global_path
+            ]
 
     def _robot_color(self, robot_name: str, active: bool) -> str:
         active_colors = {
@@ -287,28 +243,8 @@ class GridMonitorNode(Node):
             return active_colors.get(robot_name, "#1d3557")
         return "#495057"
 
-    def _nearest_landmark_name(self, point: WorldPoint, max_distance: float = 0.9) -> Optional[str]:
-        best_name: Optional[str] = None
-        best_distance_sq = max_distance * max_distance
-        px, py = point
-        for name, lm in self.landmarks.items():
-            dx = float(lm["x"]) - px
-            dy = float(lm["y"]) - py
-            dist_sq = dx * dx + dy * dy
-            if dist_sq <= best_distance_sq:
-                best_distance_sq = dist_sq
-                best_name = name
-        return best_name
-
     def _landmark_sequence_from_points(self, points: List[WorldPoint]) -> List[str]:
-        sequence: List[str] = []
-        for point in points:
-            name = self._nearest_landmark_name(point)
-            if name is None:
-                continue
-            if not sequence or sequence[-1] != name:
-                sequence.append(name)
-        return sequence
+        return self.landmark_router.landmark_sequence_from_points(points, max_distance=0.9)
 
     def _draw_graph_edges(self, ax, sequence: List[str], color: str, linewidth: float, alpha: float, zorder: int) -> None:
         if len(sequence) < 2:
@@ -399,6 +335,18 @@ class GridMonitorNode(Node):
                     linewidth=5.5,
                     alpha=0.28,
                     zorder=2,
+                )
+
+            local_path = self.robot_local_paths.get(robot_name, [])
+            if local_path:
+                local_sequence = self._landmark_sequence_from_points(local_path)
+                self._draw_graph_edges(
+                    ax,
+                    local_sequence,
+                    color=color,
+                    linewidth=3.2,
+                    alpha=0.75,
+                    zorder=4,
                 )
 
             ax.scatter(

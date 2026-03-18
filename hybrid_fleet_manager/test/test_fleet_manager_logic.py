@@ -142,6 +142,10 @@ def test_collect_static_blocked_cells_includes_idle_robot_position():
     node.pending_blocked_since_sec = {}
     node.pending_blocked_reason = {}
     node.map_provider = _FakeMapProvider(map_info)
+    node.landmarks = {}
+    node.occupied_landmark_radius_m = 0.0
+    node.occupied_landmark_block_radius_m = 0.0
+    node.occupied_landmark_block_radius_cells = 0
 
     blocked_cells = FleetManagerNode._collect_static_blocked_cells(
         node,
@@ -163,6 +167,10 @@ def test_collect_static_blocked_cells_includes_succeeded_robot_position():
     node.pending_blocked_since_sec = {}
     node.pending_blocked_reason = {}
     node.map_provider = _FakeMapProvider(map_info)
+    node.landmarks = {}
+    node.occupied_landmark_radius_m = 0.0
+    node.occupied_landmark_block_radius_m = 0.0
+    node.occupied_landmark_block_radius_cells = 0
 
     blocked_cells = FleetManagerNode._collect_static_blocked_cells(
         node,
@@ -170,6 +178,36 @@ def test_collect_static_blocked_cells_includes_succeeded_robot_position():
     )
 
     assert blocked_cells == [(1, 0)]
+
+
+def test_collect_static_blocked_cells_includes_nearest_landmark_area():
+    node = object.__new__(FleetManagerNode)
+    map_info = GridMapInfo(width=10, height=10, resolution=1.0, origin_x=-2.0, origin_y=-2.0)
+
+    node.robots = {
+        "robot1": _FakeRobot(0.0, -2.0, status="idle"),
+        "robot2": _FakeRobot(0.0, 0.0, status="idle"),
+    }
+    node.pending_blocked_since_sec = {}
+    node.pending_blocked_reason = {}
+    node.map_provider = _FakeMapProvider(map_info)
+    node.landmarks = {
+        "LM5": {"x": 0.0, "y": 0.0, "yaw": 0.0},
+    }
+    node.occupied_landmark_radius_m = 0.9
+    node.occupied_landmark_block_radius_m = 0.9
+    node.occupied_landmark_block_radius_cells = 1
+
+    blocked_cells = FleetManagerNode._collect_static_blocked_cells(
+        node,
+        excluded_robot_names={"robot1"},
+    )
+
+    assert (2, 2) in blocked_cells
+    assert (1, 2) in blocked_cells
+    assert (3, 2) in blocked_cells
+    assert (2, 1) in blocked_cells
+    assert (2, 3) in blocked_cells
 
 
 def test_cbs_cannot_plan_through_idle_robot_blocked_cell():

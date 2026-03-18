@@ -56,6 +56,16 @@ def load_sdf_with_namespace(model_path: str, namespace: str) -> str:
     for original, replacement in topic_map.items():
         sdf_text = sdf_text.replace(original, replacement)
 
+    # TurtleBot3 sensors and drive use gazebo_ros_* plugins with ROS remappings,
+    # not <topic> tags. Inject an explicit namespace so every robot publishes to
+    # its own /robotN/* topics instead of competing on shared defaults.
+    namespace_placeholders = {
+        '<!-- <namespace>/tb3</namespace> -->': f'<namespace>{ns}</namespace>',
+        '<!-- <namespace>test_cam</namespace> -->': f'<namespace>{ns}/camera</namespace>',
+    }
+    for original, replacement in namespace_placeholders.items():
+        sdf_text = sdf_text.replace(original, replacement)
+
     return sdf_text
 
 

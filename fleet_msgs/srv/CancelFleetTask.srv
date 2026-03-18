@@ -1,0 +1,7 @@
+string robot
+string reason
+---
+bool accepted
+string active_goal
+string task_id
+string message
