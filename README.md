@@ -1,34 +1,39 @@
-# Hybrid Multi-Robot Fleet Manager for ROS2 + Gazebo + Nav2
+# Hybrid Multi-Robot Fleet Manager for ROS 2 + Gazebo + Nav2
 
-This repository contains a hybrid fleet coordination stack for multiple mobile robots in Gazebo:
+This repository contains a research-oriented multi-robot stack built around three layers:
 
-- centralized discrete planning with MAPF / CBS on a grid
-- decentralized continuous execution with Nav2 inside each robot namespace
-- a lightweight Fleet Manager that converts discrete plans into Nav2 waypoint chains
+- centralized discrete coordination with CBS
+- hybrid fleet orchestration over landmarks
+- decentralized execution with Nav2 in each robot namespace
 
-The project is intended as a research and thesis platform rather than a production fleet product.
+The project is intended for simulation experiments, algorithm evaluation, and thesis work, not as a production fleet system.
 
 ## Architecture
 
-The execution pipeline is:
+The current execution pipeline is:
 
-`task -> FleetManager -> CBS planner -> grid path -> world waypoints -> Nav2 -> robot`
+`task_manager -> /fleet/tasks -> fleet_manager -> CBS grid plan -> LM route -> Nav2 goals -> robot`
 
-Main components:
+Main roles:
 
-- `gazebo_sim`: multi-robot Gazebo + Nav2 bringup
-- `hybrid_fleet_manager`: centralized hybrid fleet logic and visualizer
-- `task_manager`: CLI task publisher for testing
+- `task_manager`: CLI task sender
+- `hybrid_fleet_manager`: central coordination node and monitor
+- `fleet_msgs`: custom ROS interfaces for fleet topics
+- `gazebo_sim`: multi-robot Gazebo and Nav2 bringup
 
-Important principle:
+Key principle:
 
-- CBS operates only on grid coordinates
-- Nav2 operates only on world coordinates
-- the Fleet Manager is the bridge between them
+- CBS plans on discrete grid cells
+- Fleet Manager maps the solution to landmark-level execution
+- Nav2 executes one landmark goal at a time in continuous world coordinates
 
 ## Repository Layout
 
 ```text
+fleet_msgs/
+  msg/
+  srv/
+
 gazebo_sim/
   config/
   launch/
@@ -42,23 +47,96 @@ hybrid_fleet_manager/
     planning/
     runtime/
     utils/
+    execution_state.py
+    landmark_router.py
+    task_state.py
+    visualization_snapshot.py
   src/
   test/
   tools/
 
 task_manager/
+fleet_experiments/
+mapf/
+multi_agent_path_planning/
 ```
+
+## Packages
+
+### `fleet_msgs`
+
+Custom interfaces used by the fleet stack.
+
+Topics:
+
+- `/fleet/tasks` -> `fleet_msgs/msg/FleetTask`
+- `/fleet/task_status` -> `fleet_msgs/msg/FleetTaskStatus`
+- `/fleet/visualization` -> `fleet_msgs/msg/FleetVisualization`
+
+Services defined in the package:
+
+- `fleet_msgs/srv/SubmitFleetTask`
+- `fleet_msgs/srv/CancelFleetTask`
+
+### `hybrid_fleet_manager`
+
+Implements the hybrid coordination layer:
+
+- receives tasks
+- tracks robot landmark occupancy
+- blocks occupied landmarks and nearby cells
+- runs centralized CBS on the grid
+- converts the result into a landmark route
+- sends Nav2 goals per landmark
+- replans on timeout, off-path, or blocked conditions
+
+### `task_manager`
+
+Simple CLI publisher for sending tasks and waiting for terminal task status.
+
+### `gazebo_sim`
+
+Brings up:
+
+- Gazebo world
+- multiple robots
+- per-robot namespaced Nav2
+- sensor topic namespacing
+
+## Current Landmark Map
+
+Landmarks are defined in [hybrid_fleet_manager/config/landmarks.yaml](hybrid_fleet_manager/config/landmarks.yaml).
+
+Current default map:
+
+```text
+LM1  LM2  LM3
+LM4  LM5  LM6
+LM7  LM8  LM9
+```
+
+World coordinates:
+
+- `LM1=(-2, 2)`
+- `LM2=(0, 2)`
+- `LM3=(2, 2)`
+- `LM4=(-2, 0)`
+- `LM5=(0, 0)`
+- `LM6=(2, 0)`
+- `LM7=(-2, -2)`
+- `LM8=(0, -2)`
+- `LM9=(2, -2)`
 
 ## Requirements
 
-Tested in the current project workflow with:
+Current workflow assumes:
 
 - Ubuntu 22.04
-- ROS2 Jazzy
+- ROS 2 Jazzy
 - Gazebo Sim
 - Nav2
 
-You also need standard ROS2 development tools:
+Useful tools:
 
 - `colcon`
 - `rosdep`
@@ -66,152 +144,159 @@ You also need standard ROS2 development tools:
 
 ## Build
 
-Clone the repository and build:
+From the repository root:
 
 ```bash
-mkdir -p ~/ws/src
-cd ~/ws/src
-git clone git@github.com:abutalipovvv/mapf_ros2.git .
-cd ~/ws
+cd ~/go2_ros2_sim_py
 rosdep update
-rosdep install --from-paths src --ignore-src -r -y
+rosdep install --from-paths . --ignore-src -r -y
 colcon build --symlink-install
 source install/local_setup.bash
 ```
 
-## Multi-Robot Simulation
-
-Robot spawn positions are configured in [robots.yaml](/home/kaisar/go2_ros2_sim_py/gazebo_sim/config/robots.yaml).
-
-Example:
-
-```yaml
-robots:
-  - name: robot1
-    x_pose: '0.0'
-    y_pose: '0.0'
-  - name: robot2
-    x_pose: '-2.0'
-    y_pose: '0.0'
-```
-
-Launch Gazebo + multiple robots + Nav2:
+If you only changed the fleet stack:
 
 ```bash
-source ~/ws/install/local_setup.bash
+cd ~/go2_ros2_sim_py
+colcon build --packages-select fleet_msgs hybrid_fleet_manager task_manager gazebo_sim --symlink-install
+source install/local_setup.bash
+```
+
+## Run the System
+
+### 1. Start Gazebo and robots
+
+```bash
+cd ~/go2_ros2_sim_py
+source install/local_setup.bash
 ros2 launch gazebo_sim gazebo_multi_nav2_world.launch.py
 ```
 
-## Nav2 Namespace Substitution
+Robot spawn positions are configured in [gazebo_sim/config/robots.yaml](gazebo_sim/config/robots.yaml).
 
-`gazebo_sim/config/nav2_params.yaml` is a single shared Nav2 template.
-
-It uses the placeholder:
-
-```yaml
-<robot_namespace>
-```
-
-Example:
-
-```yaml
-scan_topic: <robot_namespace>/scan
-odom_topic: <robot_namespace>/odometry/filtered
-```
-
-During `gazebo_multi_nav2_world.launch.py`, a temporary per-robot Nav2 params file is generated automatically, for example:
-
-- `/tmp/tb3_multi_nav2/robot1_nav2_params.yaml`
-- `/tmp/tb3_multi_nav2/robot2_nav2_params.yaml`
-
-So you keep one readable config file, but each robot still receives absolute namespaced topics such as:
-
-- `/robot1/scan`
-- `/robot2/scan`
-
-## Fleet Manager
-
-Fleet Manager parameters live in [fleet_manager_params.yaml](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/config/fleet_manager_params.yaml).
-
-Current core functionality:
-
-- receives tasks from `/fleet/tasks`
-- reads robot poses from AMCL
-- converts world poses to grid cells
-- runs centralized CBS planning
-- converts discrete plans into waypoint chains
-- sends goals through each robot's Nav2 `navigate_to_pose`
-- blocks tasks if the goal is occupied by another robot
-- treats idle / finished robots as static blocked cells for planning
-- replans on timeout / off-path / aborted execution
-
-Start the Fleet Manager:
+### 2. Start Fleet Manager and monitor
 
 ```bash
-source ~/ws/install/local_setup.bash
-ros2 run hybrid_fleet_manager fleet_manager --ros-args --params-file ~/ws/src/hybrid_fleet_manager/config/fleet_manager_params.yaml
-```
-
-If you prefer the launch file:
-
-```bash
-source ~/ws/install/local_setup.bash
+cd ~/go2_ros2_sim_py
+source install/local_setup.bash
 ros2 launch hybrid_fleet_manager fleet_manager.launch.py
 ```
 
-## Task Manager
+This launch file starts:
 
-Landmarks are stored in [landmarks.yaml](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/config/landmarks.yaml).
+- `fleet_manager`
+- `grid_monitor`
 
-Current demo landmarks:
+### 3. Send tasks
 
-- `LM1` ... `LM9`
-
-Example single task:
+Single goal:
 
 ```bash
 ros2 run task_manager task_manager --robot robot1 --goal LM9
 ```
 
-Example sequential task list:
+Multiple goals:
 
 ```bash
 ros2 run task_manager task_manager --robot robot1 --goal LM5 --goal LM8 --goal LM9
 ```
 
-Example waiting for terminal status between goals:
+Wait for terminal status between goals:
 
 ```bash
 ros2 run task_manager task_manager --robot robot1 --goal LM3 --goal LM1 --wait-status
 ```
 
-Cancel active task:
+Cancel current task:
 
 ```bash
 ros2 run task_manager task_manager --robot robot1 --cancel
 ```
 
-Monitor task status:
+## Fleet Topics
+
+Inspect topic types:
+
+```bash
+ros2 topic info /fleet/tasks
+ros2 topic info /fleet/task_status
+ros2 topic info /fleet/visualization
+```
+
+Inspect interfaces:
+
+```bash
+ros2 interface show fleet_msgs/msg/FleetTask
+ros2 interface show fleet_msgs/msg/FleetTaskStatus
+ros2 interface show fleet_msgs/msg/FleetVisualization
+```
+
+Echo task status:
 
 ```bash
 ros2 topic echo /fleet/task_status
 ```
 
-## Visualizer
+## Nav2 Namespacing
 
-The simple monitor visualizes:
+The shared Nav2 template is:
 
-- landmarks
-- robots
-- the landmark graph
-- the active global plan on that graph
+- [gazebo_sim/config/nav2_params.yaml](gazebo_sim/config/nav2_params.yaml)
 
-Run it with:
+It uses `<robot_namespace>` placeholders. During launch, temporary per-robot Nav2 configs are generated under `/tmp`.
+
+Expected namespaced topics include:
+
+- `/robot1/scan`
+- `/robot2/scan`
+- `/robot1/odometry/filtered`
+- `/robot2/odometry/filtered`
+
+## Fleet Manager Behavior
+
+Current implemented behavior:
+
+- task queue and task status publishing
+- current landmark tracking for each robot
+- goal occupancy checks
+- occupied landmark blocking for planning
+- centralized CBS planning on the occupancy grid
+- landmark route extraction for execution
+- per-landmark Nav2 goal dispatch
+- waypoint timeout handling
+- off-path detection and requeue
+- visualization snapshot publishing for monitor tools
+
+Main runtime parameters are in [hybrid_fleet_manager/config/fleet_manager_params.yaml](hybrid_fleet_manager/config/fleet_manager_params.yaml).
+
+Important parameters:
+
+- `waypoint_timeout_sec`
+- `waypoint_min_spacing_m`
+- `goal_occupied_radius_m`
+- `occupied_landmark_radius_m`
+- `occupied_landmark_block_radius_m`
+- `landmark_capture_radius_m`
+- `cbs_low_level_max_time`
+- `cbs_max_high_level_nodes`
+- `cbs_max_planning_time_sec`
+
+## Grid Monitor
+
+Run separately if needed:
 
 ```bash
-source ~/ws/install/local_setup.bash
+cd ~/go2_ros2_sim_py
+source install/local_setup.bash
 ros2 run hybrid_fleet_manager grid_monitor
 ```
+
+It visualizes:
+
+- robots
+- landmark graph
+- global planned path
+- current local execution path
 
 It also saves a PNG snapshot to:
 
@@ -221,22 +306,29 @@ It also saves a PNG snapshot to:
 
 ## CBS Planner
 
-CBS implementation lives in:
+Hybrid Fleet Manager uses:
 
-- [cbs_planner.py](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/scripts/planning/cbs_planner.py)
+- [hybrid_fleet_manager/scripts/planning/cbs_planner.py](hybrid_fleet_manager/scripts/planning/cbs_planner.py)
 
-It currently supports:
+Current support:
 
 - vertex conflicts
 - edge conflicts
-- per-agent constraints
 - constrained low-level A*
-- high-level CBS search limits
-- static blocked cells for non-moving robots
+- global blocked cells
+- reserved vertex constraints
+- reserved edge constraints
+- bounded high-level search
+- planning timeout
+
+Related tests:
+
+- [hybrid_fleet_manager/test/test_cbs_planner.py](hybrid_fleet_manager/test/test_cbs_planner.py)
+- [hybrid_fleet_manager/test/test_cbs_scenarios.py](hybrid_fleet_manager/test/test_cbs_scenarios.py)
 
 ## Tests
 
-Run the current planner and FleetManager logic tests:
+Run the current fleet and planner tests:
 
 ```bash
 pytest -q \
@@ -253,19 +345,10 @@ PYTHONPATH=. python3 hybrid_fleet_manager/tools/run_cbs_scenarios.py
 
 ## Important Config Files
 
-- [robots.yaml](/home/kaisar/go2_ros2_sim_py/gazebo_sim/config/robots.yaml): available robots and spawn poses
-- [nav2_params.yaml](/home/kaisar/go2_ros2_sim_py/gazebo_sim/config/nav2_params.yaml): shared Nav2 template with `<robot_namespace>` placeholders
-- [landmarks.yaml](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/config/landmarks.yaml): named task goals
-- [fleet_manager_params.yaml](/home/kaisar/go2_ros2_sim_py/hybrid_fleet_manager/config/fleet_manager_params.yaml): fleet planning and runtime parameters
-
-## Current Status
-
-The current system is already suitable as a thesis research platform for:
-
-- conflict-free centralized planning on a discrete grid
-- hybrid execution with Nav2
-- multi-robot Gazebo experiments
-- blocked goal handling
-- conflict scenario testing and visualization
-
-The next work should focus mainly on experiments, evaluation and comparison, not on adding product-style management features.
+- [gazebo_sim/config/robots.yaml](gazebo_sim/config/robots.yaml)
+- [gazebo_sim/config/nav2_params.yaml](gazebo_sim/config/nav2_params.yaml)
+- [hybrid_fleet_manager/config/landmarks.yaml](hybrid_fleet_manager/config/landmarks.yaml)
+- [hybrid_fleet_manager/config/fleet_manager_params.yaml](hybrid_fleet_manager/config/fleet_manager_params.yaml)
+- [fleet_msgs/msg/FleetTask.msg](fleet_msgs/msg/FleetTask.msg)
+- [fleet_msgs/msg/FleetTaskStatus.msg](fleet_msgs/msg/FleetTaskStatus.msg)
+- [fleet_msgs/msg/FleetVisualization.msg](fleet_msgs/msg/FleetVisualization.msg)
